@@ -1213,7 +1213,26 @@ function get_all_mods($courseid, &$mods, &$modnames, &$modnamesplural, &$modname
     $modnamesplural= array();    // all course module names (plural form)
     $modnamesused  = array();    // course module names used
 
-    if ($allmods = $DB->get_records("modules")) {
+    /*********** eClass Modification ************
+    First Author:  Greg Gibeau
+    Initial Date:  February 2nd 2012
+    Last Author:   Greg Gibeau
+    Date Changed:  February 2nd 2012
+
+    Extra Comments: These modifications to the core code give an extra layer of administrative usability.
+    Category level show/hide for modules are checked here.
+
+     ************/
+    if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')) {
+        require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
+        $allmods = get_context_modules($COURSE->category);
+    }
+    else {
+        $allmods = $DB->get_records('modules');
+    }
+
+    if ($allmods) {
+    /*********** End eClass Modification ********/
         foreach ($allmods as $mod) {
             if (!file_exists("$CFG->dirroot/mod/$mod->name/lib.php")) {
                 continue;

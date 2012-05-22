@@ -1502,11 +1502,8 @@ abstract class admin_setting {
             return $value === false ? NULL : $value;
 
         } else {
-            if (isset($CFG->$name)) {
-                return $CFG->$name;
-            } else {
-                return NULL;
-            }
+            $value = get_config('', $name);             //eClass Modification
+            return $value === false ? NULL : $value;    //eClass Modification
         }
     }
 
@@ -1518,8 +1515,7 @@ abstract class admin_setting {
      * @return bool Write setting to config table
      */
     public function config_write($name, $value) {
-        global $DB, $USER, $CFG;
-
+        global $DB, $USER, $CFG, $COURSE, $PAGE;        //eClass Modification
         if ($this->nosave) {
             return true;
         }
@@ -1542,6 +1538,17 @@ abstract class admin_setting {
             rebuild_course_cache(0, true);
         }
 
+        /*********** eClass Modification ************
+        Extra Comments: These modifications to the core code give an extra layer of logging.  If we are changing category level settings then we log the category id
+         * along with the other required logging information.
+         ************/
+        if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')) {
+            $catadmin_flag = ($COURSE->category > 0) || ($PAGE->context->contextlevel == CONTEXT_COURSECAT);
+        }
+        else {
+            $catadmin_flag = false;
+        }
+
         // log change
         $log = new stdClass();
         $log->userid       = during_initial_install() ? 0 :$USER->id; // 0 as user id during install
@@ -1550,7 +1557,22 @@ abstract class admin_setting {
         $log->name         = $name;
         $log->value        = $value;
         $log->oldvalue     = $oldvalue;
-        $DB->insert_record('config_log', $log);
+
+        if($catadmin_flag) {
+            if($PAGE->context->contextlevel == CONTEXT_COURSECAT) {
+                $catid = $PAGE->context->instanceid;
+            }
+            else if($PAGE->context->contextlevel > CONTEXT_COURSECAT) {
+                $catid = $COURSE->category;
+            }
+
+            $log->category_id = $catid;
+            $DB->insert_record('cat_config_log', $log);
+        }
+        else {
+            $DB->insert_record('config_log', $log);
+        }
+        /*********** End eClass Modification ********/
 
         return true; // BC only
     }
