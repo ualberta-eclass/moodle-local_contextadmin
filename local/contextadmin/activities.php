@@ -29,7 +29,8 @@ $context = get_context_instance_by_id($contextid, MUST_EXIST);
 
 // Setup Page (not admin setup)
 $PAGE->set_url("/local/contextadmin/activities.php", array("contextid" => $contextid, "catid" => $catid));
-$PAGE->set_context($context);
+$PAGE->set_category_by_id($catid);
+//$PAGE->set_context($context);
 
 $show    = optional_param('show', '', PARAM_SAFEDIR);
 $hide    = optional_param('hide', '', PARAM_SAFEDIR);
@@ -66,7 +67,7 @@ if (!empty($show) and confirm_sesskey()) {
 }
 
 // Category is our primary source of context.  This is important.
-$PAGE->set_category_by_id($catid);
+//$PAGE->set_category_by_id($catid);
 $category = $PAGE->category;
 $site = get_site();
 $PAGE->set_title("$site->shortname: $category->name");

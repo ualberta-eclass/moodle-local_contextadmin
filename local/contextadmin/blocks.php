@@ -20,7 +20,7 @@ $context = get_context_instance_by_id($contextid, MUST_EXIST);
 
 // Setup Page (not admin setup)
 $PAGE->set_url("/local/contextadmin/blocks.php", array("contextid" => $contextid, "catid" => $catid));
-$PAGE->set_context($context);
+$PAGE->set_category_by_id($catid);
 
 /// Print headings
 $strmanageblocks = get_string('manageblocks');
@@ -50,7 +50,6 @@ if (!empty($show) && confirm_sesskey() ) {
 }
 
 // Setup the PAGE object
-$PAGE->set_category_by_id($catid);
 $category = $PAGE->category;
 $site = get_site();
 $PAGE->set_title("$site->shortname: $category->name");
@@ -165,7 +164,7 @@ foreach ($blocks as $blockid=>$blockraw) {
     $tablerows[] = array(strip_tags($strblockname), $row); // first element will be used for sorting
 }
 
-textlib_get_instance()->asort($tablerows);
+collatorlib::asort($tablerows);
 foreach ($tablerows as $row) {
     $table->add_data($row[1]);
 }
