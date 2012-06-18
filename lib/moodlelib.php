@@ -1427,13 +1427,16 @@ function get_config($plugin, $name = NULL) {
     //only include the core change if the plugin is available.
     if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')){
         require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
-        //category administration if its not the site level category
-        $catadmin_flag = ($COURSE->category > 0) || ($PAGE->context->contextlevel == CONTEXT_COURSECAT);
-        if($PAGE->context->contextlevel == CONTEXT_COURSECAT) {
-            $category = $PAGE->context->instanceid;
-        }
-        else if($COURSE->category > 0) {
-            $category = $COURSE->category;
+        $catadmin_flag = false;
+        if(isloggedin() && !isguestuser()) {
+            //category administration if its not the site level category
+            $catadmin_flag = ($COURSE->category > 0) || ($PAGE->context->contextlevel == CONTEXT_COURSECAT);
+            if($PAGE->context->contextlevel == CONTEXT_COURSECAT) {
+                $category = $PAGE->context->instanceid;
+            }
+            else if($COURSE->category > 0) {
+                $category = $COURSE->category;
+            }
         }
     }
     else{
