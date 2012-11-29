@@ -27,6 +27,7 @@ $string['pluginname'] = 'Context Administrator';
 
 // Navigation Strings
 $string['catadmin'] = 'Category administration';
+$string['search'] = 'Course Search';
 // Advanced Features node
 $string['advanced'] = 'Advanced features';
 $string['mycat'] = 'My categories';
