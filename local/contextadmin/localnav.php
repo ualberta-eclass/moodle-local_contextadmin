@@ -52,6 +52,12 @@ function get_context_nav(navigation_node $contextnode, $context) {
         $pluginnode = $contextnode->add(get_string('plugins', 'local_contextadmin'), null, navigation_node::TYPE_SETTING, null, 'plugins', new pix_icon('i/settings', ''));
         create_plugin_node($pluginnode,$context->id, $catid);
     }
+
+    // Add custom search page for category admins
+    $url = new moodle_url('/local/contextadmin/cat_search.php', array());
+    // Category Search tool (search restricted to categories that the user has access to)
+    $contextnode->add(get_string('search', 'local_contextadmin'), $url, navigation_node::TYPE_SETTING, null, 'search', new pix_icon('i/settings', ''));
+
     return $contextnode;
 }
 

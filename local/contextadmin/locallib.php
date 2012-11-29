@@ -714,3 +714,54 @@ function set_category_plugin_values($categoryid, $pluginname, $plugintype, $valu
         }
     }
 }
+
+function print_cat_course_search($value="", $return=false, $format="plain") {
+    global $CFG;
+    static $count = 0;
+
+    $perpagevalues = array(0,10,20,30,50,100);
+
+    $count++;
+
+    $id = 'coursesearch';
+
+    if ($count > 1) {
+        $id .= $count;
+    }
+
+    $strsearchcourses= get_string("searchcourses");
+
+    if ($format == 'plain') {
+        $output  = '<form id="'.$id.'" action="'.$CFG->wwwroot.'/local/contextadmin/cat_search.php" method="get">';
+        $output .= '<fieldset class="coursesearchbox invisiblefieldset">';
+        $output .= '<label for="coursesearchbox">'.$strsearchcourses.': </label>';
+        $output .= '<input type="text" id="coursesearchbox" size="30" name="search" value="'.s($value).'" />';
+        $output .= '<br><label for="perpagebox">Results per page:</label>';
+        $output .= '<select name="perpage>"';
+        foreach($perpagevalues as $value) {
+            $output .= '<option value="'.$value.'">'.$value.'</option>';
+        }
+        $output .= '</select>';
+        $output .= '<input type="submit" value="'.get_string('go').'" />';
+        $output .= '</fieldset></form>';
+    } else if ($format == 'short') {
+        $output  = '<form id="'.$id.'" action="'.$CFG->wwwroot.'/local/contextadmin/cat_search.php" method="get">';
+        $output .= '<fieldset class="coursesearchbox invisiblefieldset">';
+        $output .= '<label for="shortsearchbox">'.$strsearchcourses.': </label>';
+        $output .= '<input type="text" id="shortsearchbox" size="12" name="search" alt="'.s($strsearchcourses).'" value="'.s($value).'" />';
+        $output .= '<input type="submit" value="'.get_string('go').'" />';
+        $output .= '</fieldset></form>';
+    } else if ($format == 'navbar') {
+        $output  = '<form id="coursesearchnavbar" action="'.$CFG->wwwroot.'/local/contextadmin/cat_search.php" method="get">';
+        $output .= '<fieldset class="coursesearchbox invisiblefieldset">';
+        $output .= '<label for="navsearchbox">'.$strsearchcourses.': </label>';
+        $output .= '<input type="text" id="navsearchbox" size="20" name="search" alt="'.s($strsearchcourses).'" value="'.s($value).'" />';
+        $output .= '<input type="submit" value="'.get_string('go').'" />';
+        $output .= '</fieldset></form>';
+    }
+
+    if ($return) {
+        return $output;
+    }
+    echo $output;
+}
