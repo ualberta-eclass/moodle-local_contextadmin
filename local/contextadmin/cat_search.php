@@ -26,20 +26,14 @@ $catparentlist = array();
 
 //Populate usercatlist with list of category id's with required capabilities.
 $categories = get_categories();
-error_log("Categoryssssss -> ".count($categories));
+
 foreach($categories as $category) {
     $context = get_context_instance(CONTEXT_COURSECAT, $category->id);
     if(has_all_capabilities($capabilities,$context)) {
-        error_log("Category Valid -> ".print_r($category,true));
-//        $catlist = array();
-//        $parentlist = array();
         make_categories_list($usercatlist, $catparentlist, $capabilities, 0, $category);
-        error_log("COOOOOMMMEEE ON!".print_r($usercatlist,true));
-//        $usercatlist = array_merge($usercatlist, $catlist);
-//        $catparentlist = array_merge($catparentlist,$parentlist);
     }
 }
-//make_categories_list($catlist, $parentlist, $capabilities, 0, $category);
+
 $search = trim(strip_tags($search)); // trim & clean raw searched string
 if ($search) {
     $searchterms = explode(" ", $search);    // Search for words independently
@@ -79,7 +73,7 @@ if (can_edit_in_category() || !empty($usercatlist)) {
 
     // Set perpage if user can edit in category
     if ($perpage != 99999) {
-        $perpage = 30;
+        //$perpage = 30;
     }
 } else {
     $adminediting = false;
@@ -108,7 +102,6 @@ $parentlist = array();
 $displaylist = $usercatlist;
 $parentlist = $catparentlist;
 
-error_log("Display List: ".print_r($displaylist,true));
 $strcourses = get_string("courses");
 $strsearch = get_string("search");
 $strsearchresults = get_string("searchresults");
@@ -247,6 +240,10 @@ if ($courses) {
              $totalcount--;
          }
      }
+    // SETUP PROPER PAGINATION
+
+
+
     echo $OUTPUT->heading("$strsearchresults: $totalcount");
     $encodedsearch = urlencode($search);
 
@@ -412,14 +409,14 @@ echo $OUTPUT->footer();
  */
 function print_navigation_bar($totalcount,$page,$perpage,$encodedsearch,$modulelink) {
     global $OUTPUT;
-    echo $OUTPUT->paging_bar($totalcount, $page, $perpage, "local/contextadmin/cat_search.php?search=$encodedsearch".$modulelink."&perpage=$perpage");
 
     //display
     if ($perpage != 99999 && $totalcount > $perpage) {
+        echo $OUTPUT->paging_bar($totalcount, $page, $perpage, "cat_search.php?search=$encodedsearch".$modulelink."&perpage=$perpage");
         echo "<center><p>";
-        echo "<a href=\"local/contextadmin/cat_search.php?search=$encodedsearch".$modulelink."&amp;perpage=99999\">".get_string("showall", "", $totalcount)."</a>";
+        echo "<a href=\"cat_search.php?search=$encodedsearch".$modulelink."&amp;perpage=99999\">".get_string("showall", "", $totalcount)."</a>";
         echo "</p></center>";
-    } else if ($perpage === 99999) {
+    } else if ($perpage === 99999 || $perpage > $totalcount) {
         $defaultperpage = 10;
         //If user has course:create or category:manage capability the show 30 records.
         $capabilities = array('moodle/course:create', 'moodle/category:manage');
@@ -428,7 +425,7 @@ function print_navigation_bar($totalcount,$page,$perpage,$encodedsearch,$modulel
         }
 
         echo "<center><p>";
-        echo "<a href=\"local/contextadmin/cat_search.php?search=$encodedsearch".$modulelink."&amp;perpage=".$defaultperpage."\">".get_string("showperpage", "", $defaultperpage)."</a>";
+        echo "<a href=\"cat_search.php?search=$encodedsearch".$modulelink."&amp;perpage=".$defaultperpage."\">".get_string("showperpage", "", $defaultperpage)."</a>";
         echo "</p></center>";
     }
 }

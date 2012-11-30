@@ -737,7 +737,7 @@ function print_cat_course_search($value="", $return=false, $format="plain") {
         $output .= '<label for="coursesearchbox">'.$strsearchcourses.': </label>';
         $output .= '<input type="text" id="coursesearchbox" size="30" name="search" value="'.s($value).'" />';
         $output .= '<br><label for="perpagebox">Results per page:</label>';
-        $output .= '<select name="perpage>"';
+        $output .= '<select name="perpage">';
         foreach($perpagevalues as $value) {
             $output .= '<option value="'.$value.'">'.$value.'</option>';
         }
