@@ -719,7 +719,7 @@ function print_cat_course_search($value="", $return=false, $format="plain") {
     global $CFG;
     static $count = 0;
 
-    $perpagevalues = array(0,10,20,30,50,100);
+    $perpagevalues = array(10,20,30,50,100);
 
     $count++;
 
