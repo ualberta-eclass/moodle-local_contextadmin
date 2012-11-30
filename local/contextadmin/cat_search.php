@@ -241,6 +241,12 @@ echo $OUTPUT->header();
 
 $lastcategory = -1;
 if ($courses) {
+     foreach ($courses as $course) {
+         $coursecontext = context_course::instance($course->id);
+         if(!has_capability('moodle/course:delete',$coursecontext)) {
+             $totalcount--;
+         }
+     }
     echo $OUTPUT->heading("$strsearchresults: $totalcount");
     $encodedsearch = urlencode($search);
 
@@ -258,8 +264,6 @@ if ($courses) {
     if (!$adminediting) { //Not editing mode
 
             foreach ($courses as $course) {
-                $coursecontext = context_course::instance($course->id);
-                if(has_capability('moodle/course:delete',$coursecontext)) {
                 // front page don't belong to any category and block can exist.
                 if ($course->category > 0) {
                     $course->summary .= "<br /><p class=\"category\">";
@@ -269,10 +273,6 @@ if ($courses) {
                 }
                 print_course($course, $search);
                 echo $OUTPUT->spacer(array('height'=>5, 'width'=>5, 'br'=>true)); // should be done with CSS instead
-                }
-                else {
-                    $totalcount--;
-                }
             }
 
     } else { //editing mode
@@ -412,12 +412,12 @@ echo $OUTPUT->footer();
  */
 function print_navigation_bar($totalcount,$page,$perpage,$encodedsearch,$modulelink) {
     global $OUTPUT;
-    echo $OUTPUT->paging_bar($totalcount, $page, $perpage, "search.php?search=$encodedsearch".$modulelink."&perpage=$perpage");
+    echo $OUTPUT->paging_bar($totalcount, $page, $perpage, "local/contextadmin/cat_search.php?search=$encodedsearch".$modulelink."&perpage=$perpage");
 
     //display
     if ($perpage != 99999 && $totalcount > $perpage) {
         echo "<center><p>";
-        echo "<a href=\"search.php?search=$encodedsearch".$modulelink."&amp;perpage=99999\">".get_string("showall", "", $totalcount)."</a>";
+        echo "<a href=\"local/contextadmin/cat_search.php?search=$encodedsearch".$modulelink."&amp;perpage=99999\">".get_string("showall", "", $totalcount)."</a>";
         echo "</p></center>";
     } else if ($perpage === 99999) {
         $defaultperpage = 10;
@@ -428,7 +428,7 @@ function print_navigation_bar($totalcount,$page,$perpage,$encodedsearch,$modulel
         }
 
         echo "<center><p>";
-        echo "<a href=\"search.php?search=$encodedsearch".$modulelink."&amp;perpage=".$defaultperpage."\">".get_string("showperpage", "", $defaultperpage)."</a>";
+        echo "<a href=\"local/contextadmin/cat_search.php?search=$encodedsearch".$modulelink."&amp;perpage=".$defaultperpage."\">".get_string("showperpage", "", $defaultperpage)."</a>";
         echo "</p></center>";
     }
 }
