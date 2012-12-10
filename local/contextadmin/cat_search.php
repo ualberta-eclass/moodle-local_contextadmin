@@ -234,10 +234,11 @@ echo $OUTPUT->header();
 
 $lastcategory = -1;
 if ($courses) {
-     foreach ($courses as $course) {
+     foreach ($courses as $key=>$course) {
          $coursecontext = context_course::instance($course->id);
          if(!has_capability('moodle/course:delete',$coursecontext)) {
              $totalcount--;
+             unset($courses[$key]);
          }
      }
     // SETUP PROPER PAGINATION
