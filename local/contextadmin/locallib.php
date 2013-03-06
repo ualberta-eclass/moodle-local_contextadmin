@@ -42,104 +42,88 @@ function get_category_path($catid)
     return $rec->path;
 }
 
+/**
+ * Retrieves a list of all visible blocks in the category context
+ * @param $categoryid
+ * @return array
+ */
 function get_all_blocks($categoryid) {
-    global $DB;
-    if (CONTEXTADMINDEBUG)
-        echo "get_all_blocks($categoryid):\n";
-    $path = get_category_path($categoryid);
-    $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
-
-    //build on these
-    $site_blocks = $DB->get_records('block');
-    if (!empty($categoryid)) {
-
-        /*
-        * go through the categories starting from nearest to top
-        * 1. extract records for current category
-        * 2. process records and collect up changes first in collection overrides later ones
-        * 3. apply collected settings over the site_modules and return
-        */
-
-        $mod_collection = array(); //keys should be module names
-
-        foreach ($a_rev_path as $catid) {
-            $a_cur = $DB->get_records("cat_block", array('category_id' => $catid));
-            foreach ($a_cur as $cur) {
-                if (CONTEXTADMINDEBUG)
-                    echo "Found " . $cur->name . " value: ". $cur->visible . " in cat $catid";
-                if (!array_key_exists($cur->name, $mod_collection)) {
-                    $mod_collection[$cur->name] = $cur;
-                }
-                else {
-                    if (CONTEXTADMINDEBUG)
-                        echo " (preceded by earlier category)";
-                }
-                if (CONTEXTADMINDEBUG)
-                    echo "\n";
-            }
-        }
-        foreach ($site_blocks as $sblock) {
-            if (array_key_exists($sblock->name, $mod_collection)) {
-                $sblock->visible = $mod_collection[$sblock->name]->visible;
-            }
-        }
-    }
-    return $site_blocks;
-}
-
-function get_context_modules($categoryid)
-{
-    global $DB;
-    if (CONTEXTADMINDEBUG)
-        echo "get_context_modules($categoryid):\n";
-    $path = get_category_path($categoryid);
-    $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
-
-    //build on these
-    $site_modules = $DB->get_records('modules');
-    if (!empty($categoryid)) {
-
-        /*
-        * go through the categories starting from nearest to top
-        * 1. extract records for current category
-        * 2. process records and collect up changes first in collection overrides later ones
-        * 3. apply collected settings over the site_modules and return
-        */
-
-        $mod_collection = array(); //keys should be module names
-
-        foreach ($a_rev_path as $catid) {
-            $a_cur = $DB->get_records("cat_modules", array('category_id' => $catid));
-            foreach ($a_cur as $cur) {
-                if (CONTEXTADMINDEBUG)
-                    echo "Found " . $cur->name . " value: ". $cur->visible . " in cat $catid";
-                if (!array_key_exists($cur->name, $mod_collection)) {
-                    $mod_collection[$cur->name] = $cur;
-                }
-                else {
-                    if (CONTEXTADMINDEBUG)
-                        echo " (preceded by earlier category)";
-                }
-                if (CONTEXTADMINDEBUG)
-                    echo "\n";
-            }
-        }
-        foreach ($site_modules as $smod) {
-            if (array_key_exists($smod->name, $mod_collection)) {
-                $smod->visible = $mod_collection[$smod->name]->visible;
-                $smod->search = $mod_collection[$smod->name]->search;
-            }
-        }
-    }
-    return $site_modules;
+    return get_context_list($categoryid, 'blocks');
 }
 
 /**
- * Returns a value for the desired plugin setting
+ * Retrieves a list of all visible modules in the category context
+ * @param $categoryid
+ * @return array
+ */
+function get_context_modules($categoryid)
+{
+    return get_context_list($categoryid, 'modules');
+}
+
+/**
+ * Returns a list of all objects of type $type in the config tables.
+ * The function will climb the list and return only the correct plugin values in the context hierarchy.
+ * @param $categoryid
+ * @param string $type
+ * @return array
+ */
+function get_context_list($categoryid, $type ='modules')
+{
+    global $DB;
+    if (CONTEXTADMINDEBUG)
+        echo "get_context_obj($categoryid, $type):\n";
+    $path = get_category_path($categoryid);
+    $path_string = ltrim($path, '/');
+    $a_path = explode('/', $path_string);
+    $a_rev_path = array_reverse($a_path);
+
+    //build on these
+    $site_objects = $DB->get_records('$type');
+    if (!empty($categoryid)) {
+
+        /*
+        * go through the categories starting from nearest to top
+        * 1. extract records for current category
+        * 2. process records and collect up changes first in collection overrides later ones
+        * 3. apply collected settings over the site_modules and return
+        */
+
+        $object_collection = array(); //keys should be module names
+
+        foreach ($a_rev_path as $catid) {
+            $a_cur = $DB->get_records("cat_$type", array('category_id' => $catid));
+            foreach ($a_cur as $cur) {
+                if (CONTEXTADMINDEBUG)
+                    echo "Found " . $cur->name . " value: ". $cur->visible . " in cat $catid";
+                if (!array_key_exists($cur->name, $object_collection)) {
+                    $object_collection[$cur->name] = $cur;
+                }
+                else {
+                    if (CONTEXTADMINDEBUG)
+                        echo " (preceded by earlier category)";
+                }
+                if (CONTEXTADMINDEBUG)
+                    echo "\n";
+            }
+        }
+        foreach ($site_objects as $smod) {
+            if (array_key_exists($smod->name, $object_collection)) {
+                $smod->visible = $object_collection[$smod->name]->visible;
+                if($type == 'modules'){
+                    $smod->search = $object_collection[$smod->name]->search;
+                }
+
+            }
+        }
+    }
+    return $site_objects;
+}
+
+
+/**
+ * Returns the content of the 'value' field for the desired plugin setting.
+ * Climbs the tree of the categories searching for correct record.
  * @param $categoryid
  * @param $settingname
  * @param null $pluginname
@@ -186,7 +170,8 @@ function get_context_config_field($categoryid, $settingname, $pluginname = NULL)
 
 
 /**
- * This function works in a way similar to get_config except it cycles through the context path to gather settings from multiple categories up the tree to the global setting.
+ * This function works in a way similar to get_config except it cycles through the context path to gather settings from
+ * multiple categories up the tree to the global setting.
  * If no settings are set at a category level it will fall back to the settings at the global level.
  *
  * @param $categoryid
@@ -229,12 +214,7 @@ function get_context_config($categoryid, $pluginname = NULL)
                 eclassDebug("\n");
             }
         }
-        foreach ($site_settings as $name=>$value) {
-            if (array_key_exists($name, $set_collection)) {
-                $site_settings[$name] = $set_collection[$name]->value;
-            }
-        }
-        return $site_settings;
+        return array_merge($site_settings,$set_collection);
     }
     //core plugin settings
     else {
@@ -255,12 +235,7 @@ function get_context_config($categoryid, $pluginname = NULL)
             }
         }
         //augment the standard settings.
-        foreach ($site_settings as $name=>$value) {
-            if (array_key_exists($name, $set_collection)) {
-                $site_settings[$name] = $set_collection[$name]->value;
-            }
-        }
-        return $site_settings;
+        return array_merge($site_settings,$set_collection);
     }
 }
 /**
@@ -274,10 +249,10 @@ function has_category_view_capability($userid){
     }
 
     $sql = "select *
-            from mdl_role_assignments ra join mdl_role_capabilities rc ON(ra.roleid=rc.roleid)
-            where capability = :capability and ra.userid = :userid and rc.contextid = :ctx limit 1";
+            from {role_assignments} ra join {role_capabilities} rc ON(ra.roleid=rc.roleid)
+            where capability = :capability and ra.userid = :userid and rc.contextid = :ctx";
     $params = array('capability'=>'mod/contextadmin:viewcategories','userid'=>$userid,'ctx'=>1);
-    $result = $DB->get_records_sql($sql,$params);
+    $result = $DB->get_records_sql($sql,$params,0,1);
     return !empty($result);
 }
 
@@ -636,6 +611,11 @@ function set_context_block_settings($categoryid,$pluginname, $values) {
     set_category_plugin_values($categoryid,$pluginname,'block', $values);
 }
 
+/*
+ *  Retrieves the config values for a plugin by climbing the category tree. This searches records in
+ *
+ *
+ */
 function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
     global $DB;
     if (CONTEXTADMINDEBUG) {
