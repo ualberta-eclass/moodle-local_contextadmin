@@ -21,45 +21,231 @@ class contextadmin_locallib extends UnitTestCaseUsingDatabase {
     function setUp(){
         parent::setUp();
         $this->switch_to_test_db();
+        $this->switch_to_test_course();
         //create copies of local contextadmin tables
         $this->create_test_tables(array('cat_modules'),'local/contextadmin');
+        //create copies of local contextadmin tables
+        $this->create_test_tables(array('cat_block'),'local/contextadmin');
         //core
         $this->create_test_tables(array('modules','course_categories'),'lib');
 
         //load categories
         $this->load_test_data('course_categories',
-            array(       'id', 'name','parent','sortorder','coursecount','visible','visibleold','timemodified','depth','path'),
-            array(  array(2,   'Cat 1',0,       10000,      0,            1,        1,           0,             1,     '/2'),
-                array(3,   'Cat 2',2,       20000,      0,            1,        1,           0,             2,     '/2/3'),
-                array(4,   'Cat 3',3,       30000,      0,            1,        1,           0,             3,     '/2/3/4')));
+            array('name','parent','sortorder','coursecount','visible','visibleold','timemodified','depth','path'),
+            array(
+                array('Cat 1',0,       10000,      0,            1,        1,           0,             1,     '/1'),
+                array('Cat 2',2,       20000,      0,            1,        1,           0,             2,     '/1/2'),
+                array('Cat 3',3,       30000,      0,            1,        1,           0,             3,     '/1/2/3'),
+                array('Cat 4',4,       40000,      0,            1,        1,           0,             4,     '/1/2/3/4'),
+                array('Cat 5',3,       50000,      0,            1,        1,           0,             4,     '/1/2/3/5')));
 
         //load modules
         $this->load_test_data('modules',
-            array(  'id', 'name', 'version', 'cron','lastcron','search', 'visible'),
-            array(  array(1,'assignment',2010102600,60,0,'',1),
-                    array(2,'chat',2010080302,300,0,'',1),
-                    array(3,'choice',2010101301,0,0,'',1),
-                    array(4,'label',2010080300,0,0,'',1),
-                    array(5,'forum',2011052300,60,0,'',1),
-                    array(6,'glossary',2010102600,60,0,'',1),
+            array('name', 'version', 'cron','lastcron','search', 'visible'),
+            array(  array('assignment',2010102600,60,0,'',1),
+                    array('chat',2010080302,300,0,'',1),
+                    array('choice',2010101301,0,0,'',1),
+                    array('label',2010080300,0,0,'',1),
+                    array('forum',2011052300,60,0,'',1),
+                    array('glossary',2010102600,60,0,'',1),
             ));
+    }
+
+    function switch_to_test_course() {
+        global $COURSE;
+
+        $this->realcourse = clone $COURSE;
+    }
+
+    function revert_to_real_course() {
+        global $COURSE;
+        if(isset($this->realcourse)){
+            $COURSE = $this->realcourse;
+            unset($this->realcourse);
+        }
 
     }
 
-    function testGetContextModuleSettings(){
-        //todo do tests
+    function test_get_category_path(){
+
+        $path = get_category_path(1);
+        $this->assertEqual('/1',$path);
+        $path = get_category_path(2);
+        $this->assertEqual('/1/2',$path);
+        $path = get_category_path(3);
+        $this->assertEqual('/1/2/3',$path);
+        $path = get_category_path(4);
+        $this->assertEqual('/1/2/3/4',$path);
+        $path = get_category_path(5);
+        $this->assertEqual('/1/2/3/5',$path);
+        $path = get_category_path(6);
+        $this->assertEqual('0',$path);
+
     }
 
-    function testSetContextModuleSettings(){
-        //todo do tests
+
+    function test_get_module_settings(){
+        global $COURSE;
+
+        $this->load_test_data('cat_modules',
+            array(        'name',      'search',   'visible','category_id','locked','override'),
+            array(  array('assignment',    '',       1,         2,            0,        0       ),
+                    array('assignment',    '',       0,         3,            0,        0       ),
+                    array('assignment',    '',       1,         4,            0,        0       )));
+
+        //No setting specified for this category on this item; will use system level setting with visability 1
+        $COURSE->category = 1;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"1");
+
+        $COURSE->category = 2;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"1");
+
+        $COURSE->category = 3;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"0");
+
+        $COURSE->category = 4;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"1");
+
+        //No setting specified for this category on this item; will use category above (3) with visability 0
+        $COURSE->category = 5;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"0");
     }
+
+    function test_simple_set_and_get_module_settings(){
+        global $COURSE;
+
+        // Setup
+
+        // Test Set
+        $COURSE->category = 3;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+
+        // Test Get
+        $COURSE->category = 3;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"0");
+
+
+        // Teardown
+    }
+
+    function test_cascade_get_and_set_module_settings(){
+        global $COURSE;
+
+        // Setup
+
+        // Test Set
+        $COURSE->category = 2;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>1));
+        $COURSE->category = 3;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+        $COURSE->category = 4;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>1));
+
+        // Test Get
+        $COURSE->category = 2;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"1");
+
+        $COURSE->category = 3;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"0");
+
+        $COURSE->category = 4;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,"1");
+
+
+        // Teardown
+    }
+
+    function test_cascade_override_get_and_set_module_settings(){
+        global $COURSE;
+
+        // Setup
+
+        // Test Set
+        $COURSE->category = 2;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>1));
+        $COURSE->category = 3;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0, 'override'=>1));
+        $COURSE->category = 4;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>1));
+        $COURSE->category = 5;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>1));
+
+        // Test Get
+        $COURSE->category = 2;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,1);
+
+        $COURSE->category = 3;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,0);
+
+        //Should be overriden by category 3
+        $COURSE->category = 4;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,0);
+
+        //Should be overriden by category 3
+        $COURSE->category = 5;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,0);
+
+        // Teardown
+    }
+
+    function test_cascade_locked_set_module_settings(){
+        global $COURSE;
+
+        // Setup
+
+        // Test Set
+        $COURSE->category = 2;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>1));
+        $COURSE->category = 3;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0, 'locked'=>1));
+
+        $COURSE->category = 2;
+        $this->assertFalse(is_plugin_locked($COURSE->category,'assignment','modules'));
+        $COURSE->category = 3;
+        $this->assertFalse(is_plugin_locked($COURSE->category,'assignment','modules'));
+        $COURSE->category = 4;
+        $this->assertTrue(is_plugin_locked($COURSE->category,'assignment','modules'));
+        $COURSE->category = 5;
+        $this->assertTrue(is_module_locked($COURSE->category,'assignment'));
+
+        // Teardown
+    }
+
+
     /**
      * Teardown function for this test suite's test cases.
      * This gets run for each test* function in this class
      */
     function tearDown(){
         //todo teardown our tables and data
-
+        $this->revert_to_real_course();
+        $this->revert_to_real_db();
         parent::tearDown();
     }
 }
