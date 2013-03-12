@@ -107,6 +107,7 @@ $table->set_attribute('id', 'modules');
 $table->set_attribute('class', 'generaltable');
 $table->setup();
 
+
 foreach ($modules as $module) {
     // TODO: make a more efficient way to grab initial category modules instead of site level then overriding
     $module = get_context_module_settings($catid,$module->name);

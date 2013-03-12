@@ -48,7 +48,7 @@ function get_category_path($catid)
  * @return array
  */
 function get_all_blocks($categoryid) {
-    return get_context_list($categoryid, 'blocks');
+    return get_context_list($categoryid, 'block');
 }
 
 /**
@@ -79,7 +79,7 @@ function get_context_list($categoryid, $type ='modules')
     $a_rev_path = array_reverse($a_path);
 
     //build on these
-    $site_objects = $DB->get_records('$type');
+    $site_objects = $DB->get_records("$type");
     if (!empty($categoryid)) {
 
         /*
@@ -96,7 +96,7 @@ function get_context_list($categoryid, $type ='modules')
             foreach ($a_cur as $cur) {
                 if (CONTEXTADMINDEBUG)
                     echo "Found " . $cur->name . " value: ". $cur->visible . " in cat $catid";
-                if (!array_key_exists($cur->name, $object_collection)) {
+                if (!array_key_exists($cur->name, $object_collection) || $cur->override == true) {
                     $object_collection[$cur->name] = $cur;
                 }
                 else {
@@ -139,32 +139,42 @@ function get_context_config_field($categoryid, $settingname, $pluginname = NULL)
     $a_path = explode('/', $path_string);
     $a_rev_path = array_reverse($a_path);
 
+    $return_value = null;
     if (!empty($pluginname)) {
         foreach ($a_rev_path as $catid) {
-            $cur = $DB->get_field("cat_config_plugins", 'value', array('category_id' => $catid, 'plugin' => $pluginname, 'name' => $settingname));
-            //once found no need to continue
+            $cur = $DB->get_record("cat_config_plugins", array('category_id' => $catid, 'plugin' => $pluginname, 'name' => $settingname),"value,override");
+            //Must go through whole category list in case overridden above.
             // **NOTE** -> Since checkboxes return 0, we need !== instead of != and we also cannot use empty as a comparator....
-            if($cur !== false) {
-                return $cur;
+            if($cur !== false && (empty($return_value) || $cur->override)) {
+                $return_value = $cur->value;
             }
         }
-        if (CONTEXTADMINDEBUG) {
-            echo "Used system level config plugin: $pluginname name: $settingname\n";
+
+        if(empty($return_value)){
+            if (CONTEXTADMINDEBUG) {
+                echo "Used system level config name: $settingname\n";
+            }
+            return $DB->get_field('config_plugins', 'value', array('plugin' => $pluginname, 'name' => $settingname));
         }
-        return $DB->get_field('config_plugins', 'value', array('plugin' => $pluginname, 'name' => $settingname));
+        return $return_value;
     }
     else {
         foreach ($a_rev_path as $catid) {
-            $cur = $DB->get_field("cat_config", 'value', array('category_id' => $catid, 'name' => $settingname));
+            $cur = $DB->get_record("cat_config", array('category_id' => $catid, 'name' => $settingname),"value,override");
+            //Must go through whole category list in case overridden above.
             // **NOTE** -> Since checkboxes return 0, we need !== instead of != and we also cannot use empty as a comparator....
-            if($cur !== false) {
-                return $cur;
+            if($cur !== false && (empty($return_value) || $cur->override)) {
+                $return_value = $cur->value;
             }
         }
-        if (CONTEXTADMINDEBUG) {
-            echo "Used system level config name: $settingname\n";
+
+        if(empty($return_value)){
+            if (CONTEXTADMINDEBUG) {
+                echo "Used system level config name: $settingname\n";
+            }
+            return $DB->get_field('config', 'value', array('name' => $settingname));
         }
-        return $DB->get_field('config', 'value', array('name' => $settingname));
+        return $return_value;
     }
 }
 
@@ -205,7 +215,7 @@ function get_context_config($categoryid, $pluginname = NULL)
             $a_cur = $DB->get_records("cat_config_plugins", array('category_id' => $catid, 'plugin' => $pluginname));
             foreach ($a_cur as $cur) {
                 eclassDebug("Found config plugin: " . $pluginname . ": " . $cur->name . " value: ". $cur->value . " in cat $catid");
-                if (!array_key_exists($cur->name, $set_collection)) {
+                if (!array_key_exists($cur->name, $set_collection) || $cur->override) {
                     $set_collection[$cur->name] = $cur;
                 }
                 else {
@@ -225,7 +235,7 @@ function get_context_config($categoryid, $pluginname = NULL)
             foreach ($a_cur as $cur) {
                 eclassDebug("Found config: " . $cur->name . " value: ". $cur->value . " in cat $catid");
 
-                if (!array_key_exists($cur->name, $set_collection)) {
+                if (!array_key_exists($cur->name, $set_collection) || $cur->override) {
                     $set_collection[$cur->name] = $cur;
                 }
                 else {
@@ -595,38 +605,70 @@ function print_category_manager_info($category, $depth=0, $showcourses = false, 
     return $output;
 }
 
+/**
+ * Convenience method to retrieve settings for module
+ * @param $categoryid
+ * @param $pluginname
+ * @return mixed|string
+ */
 function get_context_module_settings($categoryid,$pluginname) {
     return get_category_plugin_values($categoryid,$pluginname,'modules');
 }
 
+/**
+ * Convenience method to set settings for module
+ * @param $categoryid
+ * @param $pluginname
+ * @param $values
+ */
 function set_context_module_settings($categoryid,$pluginname, $values) {
     set_category_plugin_values($categoryid,$pluginname,'modules', $values);
 }
 
+/**
+ * Convenience method to retrieve settings for block
+ * @param $categoryid
+ * @param $pluginname
+ * @return mixed|string
+ */
 function get_context_block_settings($categoryid,$pluginname) {
     return get_category_plugin_values($categoryid,$pluginname,'block');
 }
 
+/**
+ * Convenience method to set settings for block
+ * @param $categoryid
+ * @param $pluginname
+ * @param $values
+ */
 function set_context_block_settings($categoryid,$pluginname, $values) {
     set_category_plugin_values($categoryid,$pluginname,'block', $values);
 }
 
-/*
- *  Retrieves the config values for a plugin by climbing the category tree. This searches records in
- *
+/**
+ * Retrieves the record object for a plugin by climbing the category tree.
+ * @param $categoryid
+ * @param $pluginname
+ * @param $plugintype
+ * @return stdclass record
  *
  */
 function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
     global $DB;
     if (CONTEXTADMINDEBUG) {
-        echo "get_context_module_settings($categoryid,$pluginname, $plugintype):\n";
+        echo "get_category_plugin_values($categoryid,$pluginname, $plugintype):\n";
+    }
+
+    if (empty($pluginname)) {
+        return null;
     }
 
     $validplugins = array('modules', 'block'); //valid types
     if(!in_array($plugintype,$validplugins)) {
         debugging('Invalid plugintype passed to get_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
-        return;
+        return null;
     }
+
 
     $path = get_category_path($categoryid);
     $path_string = ltrim($path, '/');
@@ -639,29 +681,36 @@ function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
     * 2. process records and collect up changes first in collection overrides later ones
     * 3. apply collected settings over the site_modules and return
     */
-    //todo if more than just visibility is needed then we may need to cascade settings through the tree and not stop at the first record returned.
     //$set_collection = array(); //keys should be setting names
+    $return_value = null;
     if (!empty($pluginname)) {
         //Use site if no context level exists
-        $site_settings = $DB->get_record($plugintype, array('name' => $pluginname));
+
         foreach ($a_rev_path as $catid) {
-            if($a_cur = $DB->get_record("cat_".$plugintype, array('name' => $pluginname,'category_id' => $catid))) {
-                return $a_cur;
+            $a_cur = $DB->get_record("cat_".$plugintype, array('name' => $pluginname,'category_id' => $catid));
+            if(!empty($a_cur) && ($a_cur->override || empty($return_value))) {
+                $return_value = $a_cur;
             }
         }
 
-        return $site_settings;
+        $site_settings = $DB->get_record($plugintype, array('name' => $pluginname));
+        //Merge the objects together so that the extra fields in the site_settings record exist in the returned object
+        $return_value = (object)array_merge((array)$site_settings, (array)$return_value);
+        return $return_value;
     }
 }
 
 /**
+ * Sets the settings for a module or block at the category level
  * @param $categoryid
  * @param $pluginname
- * @param $plugintype the type of plugin to set (currently valid values are: modules, blocks)
- * @param $values settings in the modules record (visible or search)
+ * @param $plugintype string the type of plugin to set (currently valid values are: modules, blocks)
+ * @param $values array settings in the modules record (visible or search)
  */
 function set_category_plugin_values($categoryid, $pluginname, $plugintype, $values) {
     global $DB;
+
+    //todo need to check rest of tree for locks above it.
 
     $validplugins = array('modules', 'block'); //valid types
     if(!in_array($plugintype,$validplugins)) {
@@ -684,14 +733,90 @@ function set_category_plugin_values($categoryid, $pluginname, $plugintype, $valu
         }
         else {
             //create
-            $record['name'] = $pluginname;
-            $record['category_id'] = $categoryid;
-            foreach($values as $key=>$value) {
-                $record[$key] = $value;
-            }
+            $record = new stdClass();
+            $record->name = $pluginname;
+            $record->category_id = $categoryid;
+            $record = (object) array_merge((array)$record, (array)$values);
             //insert into db
             $DB->insert_record('cat_'.$plugintype,$record);
         }
+    }
+    else {
+        throw new Exception("set_category_plugin_values missing arguments ($categoryid, $pluginname)");
+    }
+}
+
+/**
+ * Checks if there exists a record above that has the locked flag set to true
+ * @param $categoryid
+ * @param $pluginname
+ * @return bool true if locked, false if not locked
+ *
+ */
+function is_module_locked($categoryid, $pluginname) {
+    return is_plugin_locked($categoryid,$pluginname,'modules');
+}
+
+/**
+ * Checks if there exists a record above that has the locked flag set to true
+ * @param $categoryid
+ * @param $pluginname
+ * @return bool true if locked, false if not locked
+ *
+ */
+function is_block_locked($categoryid, $pluginname) {
+    return is_plugin_locked($categoryid,$pluginname,'block');
+}
+
+/**
+ * Checks if there exists a record above that has the locked flag set to true
+ * @param $categoryid
+ * @param $pluginname
+ * @param $plugintype
+ * @return bool true if locked, false if not locked
+ *
+ */
+function is_plugin_locked($categoryid, $pluginname, $plugintype) {
+    global $DB;
+    if (CONTEXTADMINDEBUG) {
+        echo "is_plugin_locked($categoryid,$pluginname, $plugintype):\n";
+    }
+
+    if (empty($pluginname)) {
+        return null;
+    }
+
+    $validplugins = array('modules', 'block'); //valid types
+    if(!in_array($plugintype,$validplugins)) {
+        debugging('Invalid plugintype passed to get_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+        return null;
+    }
+
+
+    $path = get_category_path($categoryid);
+    $path_string = ltrim($path, '/');
+    $a_path = explode('/', $path_string);
+    $a_rev_path = array_reverse($a_path);
+
+    //Remove the first element. We can't lock ourselves.
+    array_shift($a_rev_path);
+
+    /*
+    * go through the categories starting from nearest to top
+    * 1. extract records for current category
+    * 2. process records and collect up changes first in collection overrides later ones
+    * 3. apply collected settings over the site_modules and return
+    */
+    if (!empty($pluginname)) {
+        //Use site if no context level exists
+
+        foreach ($a_rev_path as $catid) {
+
+            if($DB->get_field("cat_".$plugintype, 'locked', array('name' => $pluginname,'category_id' => $catid, 'locked'=>1))) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

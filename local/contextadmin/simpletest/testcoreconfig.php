@@ -32,10 +32,12 @@ class contextadmin_coreconfig extends UnitTestCaseUsingDatabase {
 
         //load categories
         $this->load_test_data('course_categories',
-                array(       'id', 'name','parent','sortorder','coursecount','visible','visibleold','timemodified','depth','path'),
-                array(  array(1,   'Cat 1',0,       10000,      0,            1,        1,           0,             1,     '/1'),
-                        array(2,   'Cat 2',1,       20000,      0,            1,        1,           0,             2,     '/1/2'),
-                        array(3,   'Cat 3',2,       30000,      0,            1,        1,           0,             3,     '/1/2/3')));
+                array(       'name','parent','sortorder','coursecount','visible','visibleold','timemodified','depth','path'),
+                array(  array('Cat 1',0,       10000,      0,            1,        1,           0,             1,     '/1'),
+                        array('Cat 2',1,       20000,      0,            1,        1,           0,             2,     '/1/2'),
+                        array('Cat 3',2,       30000,      0,            1,        1,           0,             3,     '/1/2/3'),
+                        array('Cat 4',3,       30000,      0,            1,        1,           0,             4,     '/1/2/3/4'),
+                        array('Cat 5',4,       30000,      0,            1,        1,           0,             5,     '/1/2/3/4/5')));
         //load config data
         $this->load_test_data('config', array(      'name',     'value'),
                                         array(array('setting1',  0),
@@ -55,15 +57,32 @@ class contextadmin_coreconfig extends UnitTestCaseUsingDatabase {
     function switch_to_test_course() {
         global $COURSE;
 
-        $this->realcourse = $COURSE;
+        $this->realcourse = clone $COURSE;
     }
 
     function revert_to_real_course() {
         global $COURSE;
+        if(isset($this->realcourse)){
+            $COURSE = $this->realcourse;
+            unset($this->realcourse);
+        }
 
-        $COURSE = $this->realcourse;
-        unset($this->realcourse);
     }
+
+    function test_get_category_path(){
+
+        $path = get_category_path(2);
+        $this->assertEqual('/1/2',$path);
+        $path = get_category_path(3);
+        $this->assertEqual('/1/2/3',$path);
+        $path = get_category_path(5);
+        $this->assertEqual('/1/2/3/4/5',$path);
+
+    }
+
+    /*********************************
+     * tables: config, cat_config
+     *********************************/
 
     // Test setting config for site level, no category
     function test_config_no_cat() {
@@ -71,6 +90,29 @@ class contextadmin_coreconfig extends UnitTestCaseUsingDatabase {
         //setup
         //basic setup() sufficient
         $COURSE->category = 0;
+        // Test Set
+        // Set at global level (no category)
+        set_config('setting1',1);
+        set_config('setting3',3);
+
+        // Test Get
+        // Get from global level (no category)
+        $result = get_config(null,'setting1');
+        $this->assertEqual($result,1);
+        $result = get_config(null,'setting2');
+        $this->assertEqual($result,0);
+        $result = get_config(null,'setting3');
+        $this->assertEqual($result,3);
+
+        // Teardown
+    }
+
+    // Test setting config for site level, no category settings, for a category
+    function test_config_with_cat() {
+        global $COURSE;
+        //setup
+        //basic setup() sufficient
+        $COURSE->category = 3;
         // Test Set
         // Set at global level (no category)
         set_config('setting1',1);
@@ -140,6 +182,39 @@ class contextadmin_coreconfig extends UnitTestCaseUsingDatabase {
 
         // Teardown
     }
+
+    // Test setting config at multiple category levels
+    function test_config_cascade_with_override() {
+        global $COURSE;
+
+        // Setup
+
+        // Settings should like like this array after function call to set_config
+
+        // Test Set
+        $COURSE->category = 3;
+        set_config('setting1',7); // Set this config at cat 3 (3rd level of category)
+        $COURSE->category = 2;
+        set_config('setting2',8); // Set this config at cat 2 (2nd level of category)
+        $COURSE->category = 1;
+        set_config('setting3',9); // Set this config at cat 1 (1st level of category)
+
+        $COURSE->category = 3;
+        // Test Get
+        $result = get_config(null,'setting1'); // Get config for setting1 (set at 3rd level category)
+        $this->assertEqual($result,7);
+        $result = get_config(null,'setting2'); // Get config for setting2 (set at 2nd level category)
+        $this->assertEqual($result,8);
+        $result = get_config(null,'setting3'); // Get config for setting3 (set at 1st level category)
+        $this->assertEqual($result,9);
+
+        // Teardown
+    }
+
+    /*********************************
+     * tables: config_plugins,
+     *         cat_config_plugins
+     *********************************/
 
     // Test setting plugin config at category level
     function test_plugin_config_no_cat() {
@@ -217,6 +292,11 @@ class contextadmin_coreconfig extends UnitTestCaseUsingDatabase {
 
         // Teardown
     }
+
+
+
+    //todo add module table and block table tests
+
 
     /**
      * Teardown function for this test suite's test cases.
