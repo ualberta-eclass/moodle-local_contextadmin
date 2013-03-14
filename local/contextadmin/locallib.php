@@ -746,6 +746,44 @@ function set_category_plugin_values($categoryid, $pluginname, $plugintype, $valu
     }
 }
 
+function remove_category_module_values($categoryid, $pluginname) {
+    remove_category_plugin_values($categoryid,$pluginname,'modules');
+}
+
+function remove_category_block_values($categoryid, $pluginname) {
+    remove_category_plugin_values($categoryid,$pluginname,'block');
+}
+
+/**
+ * Removes the settings for a module or block at the category level
+ * @param $categoryid
+ * @param $pluginname
+ * @param $plugintype string the type of plugin to set (currently valid values are: modules, blocks)
+ */
+function remove_category_plugin_values($categoryid, $pluginname, $plugintype) {
+    global $DB;
+
+    //todo need to check rest of tree for locks above it.
+
+    $validplugins = array('modules', 'block'); //valid types
+    if(!in_array($plugintype,$validplugins)) {
+        debugging('Invalid plugintype passed to set_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+        return;
+    }
+
+    if (CONTEXTADMINDEBUG) {
+        echo "remove_category_plugin_values($categoryid,$pluginname,$plugintype):\n";
+    }
+
+    if(!empty($pluginname) && !empty($categoryid)) {
+        $DB->delete_records('cat_'.$plugintype,array('category_id' => $categoryid, 'name' => $pluginname));
+
+    }
+    else {
+        throw new Exception("set_category_plugin_values missing arguments ($categoryid, $pluginname)");
+    }
+}
+
 /**
  * Checks if there exists a record above that has the locked flag set to true
  * @param $categoryid
@@ -788,7 +826,7 @@ function is_plugin_locked($categoryid, $pluginname, $plugintype) {
 
     $validplugins = array('modules', 'block'); //valid types
     if(!in_array($plugintype,$validplugins)) {
-        debugging('Invalid plugintype passed to get_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+        debugging('Invalid plugintype passed to is_plugin_locked in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
         return null;
     }
 
@@ -818,6 +856,41 @@ function is_plugin_locked($categoryid, $pluginname, $plugintype) {
         }
         return false;
     }
+}
+
+function category_module_exists($categoryid,$pluginname){
+    return category_plugin_exists($categoryid,$pluginname,'modules');
+}
+
+function category_block_exists($categoryid,$pluginname){
+    return category_plugin_exists($categoryid,$pluginname,'block');
+}
+
+/**
+ * Tests for existence of a record for the module at the category level.
+ * @param $categoryid
+ * @param $pluginname
+ * @param $plugintype
+ * @return bool
+ */
+function category_plugin_exists($categoryid, $pluginname, $plugintype){
+    global $DB;
+    if (CONTEXTADMINDEBUG) {
+        echo "category_plugin_exists($categoryid,$pluginname, $plugintype):\n";
+    }
+
+    if (empty($pluginname)) {
+        return false;
+    }
+
+    $validplugins = array('modules', 'block'); //valid types
+    if(!in_array($plugintype,$validplugins)) {
+        debugging('Invalid plugintype passed to category_plugin_exists in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+        return false;
+    }
+
+    //Use site if no context level exists
+    return $DB->record_exists("cat_".$plugintype, array('name' => $pluginname,'category_id' => $categoryid));
 }
 
 function print_cat_course_search($value="", $return=false, $format="plain") {
@@ -869,4 +942,26 @@ function print_cat_course_search($value="", $return=false, $format="plain") {
         return $output;
     }
     echo $output;
+}
+
+/**
+ * @param $outputobject
+ * @param $id
+ * @param $target
+ * @param $link_title
+ * @param $icon
+ * @param $a_inputs
+ * @return string
+ */
+function create_form($outputobject, $id, $target, $link_title, $icon, $a_inputs){
+    $form = "<form id=\"$id\" method=\"post\" action=\"$target\">";
+    foreach($a_inputs as $name=>$value){
+        $form .= "<input type='hidden' name='$name' value='$value'/>";
+    }
+
+    $form .="<a href=\"#\" onclick='document.getElementById(\"$id\").submit();' title=\"$link_title\">".
+        "<img src=\"" . $outputobject->pix_url("i/$icon") . "\" class=\"icon\" alt=\"$link_title\" /></a>";
+
+    $form .='</form>';
+    return $form;
 }
