@@ -237,8 +237,89 @@ class contextadmin_locallib extends UnitTestCaseUsingDatabase {
         // Teardown
     }
 
+    function test_remove_plugin_setting(){
+        global $COURSE;
 
-    /**
+        // Setup
+
+        // Test Set
+        $COURSE->category = 2;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+        $COURSE->category = 3;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+
+        $COURSE->category = 2;
+        remove_category_plugin_values($COURSE->category, 'assignment','modules');
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,1);
+
+        $COURSE->category = 3;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,0);
+
+        $COURSE->category = 3;
+        remove_category_plugin_values($COURSE->category, 'assignment','modules');
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,1);
+
+        // Teardown
+    }
+
+    function test_remove_module_setting(){
+        global $COURSE;
+
+        // Setup
+
+        // Test Set
+        $COURSE->category = 2;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+        $COURSE->category = 3;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+
+        $COURSE->category = 2;
+        remove_category_module_values($COURSE->category, 'assignment');
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,1);
+
+        $COURSE->category = 3;
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,0);
+
+        $COURSE->category = 3;
+        remove_category_module_values($COURSE->category, 'assignment');
+        $result = get_context_module_settings($COURSE->category,'assignment');
+        $this->assertEqual($result->name,'assignment');
+        $this->assertEqual($result->visible,1);
+
+        // Teardown
+    }
+
+    function test_category_module_exists(){
+        global $COURSE;
+
+        // Setup
+
+        // Test Set
+        $COURSE->category = 2;
+        set_context_module_settings($COURSE->category,'assignment',array('visible'=>0));
+
+        $result = category_module_exists($COURSE->category, 'assignment','modules');
+        $this->assertTrue($result);
+
+        $COURSE->category = 3;
+        remove_category_module_values($COURSE->category, 'assignment');
+        $result = category_module_exists($COURSE->category, 'assignment','modules');
+        $this->assertFalse($result);
+
+        // Teardown
+    }
+
+    /**      remove_category_plugin_values
      * Teardown function for this test suite's test cases.
      * This gets run for each test* function in this class
      */
