@@ -156,17 +156,16 @@ foreach ($modules as $module) {
         $settings_td = "";
     }
 
-    $form_base = '';
 
+    $class   = '';
     // If we can hide/show then create the icons/links
     if(has_capability('mod/contextadmin:changevisibilty', $context)) {
         $self_path = "activities.php?contextid=$contextid&catid=$catid";
+
         if ($missing) {
             $visible_td = '';
-            $class   = '';
         } else if ($module->visible) {
             $visible_td = create_form($OUTPUT,$module->name."_visible_form",$self_path,$strhide,'hide',array('module_name'=>$module->name, 'visible'=>'false', 'sesskey'=>sesskey()));
-            $class   = '';
         } else {
             $visible_td = create_form($OUTPUT,$module->name."_visible_form",$self_path,$strhide,'show',array('module_name'=>$module->name, 'visible'=>'true', 'sesskey'=>sesskey()));
             $class =   ' class="dimmed_text"';

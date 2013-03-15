@@ -47,3 +47,4 @@ $string['override_title'] = 'Override Below';
 $string['locked_title'] = 'Lock Below';
 $string['clear'] = 'Clear Visibility';
 $string['modulelocked'] = 'Module is locked in a context above this one.';
+$string['modulelocked'] = 'Block is locked in a context above this one.';
