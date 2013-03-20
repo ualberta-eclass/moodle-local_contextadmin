@@ -14,21 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Adds this plugin to the admin menu.
- *
- * @package    local
- * @subpackage qeupgradehelper
- * @copyright  2011 The Open University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 
 defined('MOODLE_INTERNAL') || die;
 
 // Define site admin settings for category management.
-
-//if ($hassiteconfig) { // needs this condition or there is error on login page
-//    $ADMIN->add('root', new admin_externalpage('contextadmin',
-//            get_string('pluginname', 'local_contextadmin'),
-//            new moodle_url('/local/contextadmin/index.php', array('contextid'=>SYSCONTEXTID))));
-//}

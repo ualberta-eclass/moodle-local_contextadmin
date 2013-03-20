@@ -1,11 +1,18 @@
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: tdjones
- * Date: 12-02-02
- * Time: 11:17 AM
- * To change this template use File | Settings | File Templates.
- */
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -18,10 +25,10 @@ if (!defined("CONTEXTADMINDEBUG")) {
  * @param settings_navigation $nav
  * @return navigation_node
  */
-function category_get_root(settings_navigation &$nav){
+function category_get_root(settings_navigation &$nav) {
     static $category_root = null;
-    if(!isset($category_root)){
-        $category_root = $nav->add(get_string('catadmin', 'local_contextadmin')); // Root Node
+    if (!isset($category_root)) {
+        $category_root = $nav->add(get_string('catadmin', 'local_contextadmin')); // Root Node.
     }
     return $category_root;
 }
@@ -32,8 +39,7 @@ function category_get_root(settings_navigation &$nav){
  * @param $groupid
  * @return string
  */
-function get_category_path($catid)
-{
+function get_category_path($catid) {
     global $DB;
     $rec = $DB->get_record('course_categories', array('id' => $catid), 'path');
     if (empty($rec)) {
@@ -56,8 +62,7 @@ function get_all_blocks($categoryid) {
  * @param $categoryid
  * @return array
  */
-function get_context_modules($categoryid)
-{
+function get_context_modules($categoryid) {
     return get_context_list($categoryid, 'modules');
 }
 
@@ -68,17 +73,17 @@ function get_context_modules($categoryid)
  * @param string $type
  * @return array
  */
-function get_context_list($categoryid, $type ='modules')
-{
+function get_context_list($categoryid, $type = 'modules') {
     global $DB;
-    if (CONTEXTADMINDEBUG)
+    if (CONTEXTADMINDEBUG) {
         echo "get_context_obj($categoryid, $type):\n";
-    $path = get_category_path($categoryid);
+    }
+    $path        = get_category_path($categoryid);
     $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
+    $a_path      = explode('/', $path_string);
+    $a_rev_path  = array_reverse($a_path);
 
-    //build on these
+    // Build on these.
     $site_objects = $DB->get_records("$type");
     if (!empty($categoryid)) {
 
@@ -89,28 +94,30 @@ function get_context_list($categoryid, $type ='modules')
         * 3. apply collected settings over the site_modules and return
         */
 
-        $object_collection = array(); //keys should be module names
+        $object_collection = array(); // Keys should be module names.
 
         foreach ($a_rev_path as $catid) {
             $a_cur = $DB->get_records("cat_$type", array('category_id' => $catid));
             foreach ($a_cur as $cur) {
-                if (CONTEXTADMINDEBUG)
-                    echo "Found " . $cur->name . " value: ". $cur->visible . " in cat $catid";
+                if (CONTEXTADMINDEBUG) {
+                    echo "Found " . $cur->name . " value: " . $cur->visible . " in cat $catid";
+                }
                 if (!array_key_exists($cur->name, $object_collection) || $cur->override == true) {
                     $object_collection[$cur->name] = $cur;
-                }
-                else {
-                    if (CONTEXTADMINDEBUG)
+                } else {
+                    if (CONTEXTADMINDEBUG) {
                         echo " (preceded by earlier category)";
+                    }
                 }
-                if (CONTEXTADMINDEBUG)
+                if (CONTEXTADMINDEBUG) {
                     echo "\n";
+                }
             }
         }
         foreach ($site_objects as $smod) {
             if (array_key_exists($smod->name, $object_collection)) {
                 $smod->visible = $object_collection[$smod->name]->visible;
-                if($type == 'modules'){
+                if ($type == 'modules') {
                     $smod->search = $object_collection[$smod->name]->search;
                 }
 
@@ -129,46 +136,47 @@ function get_context_list($categoryid, $type ='modules')
  * @param null $pluginname
  * @return mixed|null
  */
-function get_context_config_field($categoryid, $settingname, $pluginname = NULL)
-{
+function get_context_config_field($categoryid, $settingname, $pluginname = null) {
     global $DB;
-    if (CONTEXTADMINDEBUG)
+    if (CONTEXTADMINDEBUG) {
         echo "get_context_config_field($categoryid,$settingname,$pluginname):\n";
-    $path = get_category_path($categoryid);
+    }
+    $path        = get_category_path($categoryid);
     $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
+    $a_path      = explode('/', $path_string);
+    $a_rev_path  = array_reverse($a_path);
 
     $return_value = null;
     if (!empty($pluginname)) {
         foreach ($a_rev_path as $catid) {
-            $cur = $DB->get_record("cat_config_plugins", array('category_id' => $catid, 'plugin' => $pluginname, 'name' => $settingname),"value,override");
-            //Must go through whole category list in case overridden above.
+            $cur = $DB->get_record("cat_config_plugins",
+                                   array('category_id' => $catid, 'plugin' => $pluginname, 'name' => $settingname),
+                                   "value,override");
+            // Must go through whole category list in case overridden above.
             // **NOTE** -> Since checkboxes return 0, we need !== instead of != and we also cannot use empty as a comparator....
-            if($cur !== false && (empty($return_value) || $cur->override)) {
+            if ($cur !== false && (empty($return_value) || $cur->override)) {
                 $return_value = $cur->value;
             }
         }
 
-        if(empty($return_value)){
+        if (empty($return_value)) {
             if (CONTEXTADMINDEBUG) {
                 echo "Used system level config name: $settingname\n";
             }
             return $DB->get_field('config_plugins', 'value', array('plugin' => $pluginname, 'name' => $settingname));
         }
         return $return_value;
-    }
-    else {
+    } else {
         foreach ($a_rev_path as $catid) {
-            $cur = $DB->get_record("cat_config", array('category_id' => $catid, 'name' => $settingname),"value,override");
-            //Must go through whole category list in case overridden above.
+            $cur = $DB->get_record("cat_config", array('category_id' => $catid, 'name' => $settingname), "value,override");
+            // Must go through whole category list in case overridden above.
             // **NOTE** -> Since checkboxes return 0, we need !== instead of != and we also cannot use empty as a comparator....
-            if($cur !== false && (empty($return_value) || $cur->override)) {
+            if ($cur !== false && (empty($return_value) || $cur->override)) {
                 $return_value = $cur->value;
             }
         }
 
-        if(empty($return_value)){
+        if (empty($return_value)) {
             if (CONTEXTADMINDEBUG) {
                 echo "Used system level config name: $settingname\n";
             }
@@ -188,17 +196,16 @@ function get_context_config_field($categoryid, $settingname, $pluginname = NULL)
  * @param null $pluginname
  * @return array
  */
-function get_context_config($categoryid, $pluginname = NULL)
-{
+function get_context_config($categoryid, $pluginname = null) {
     global $DB;
     if (CONTEXTADMINDEBUG) {
         echo "get_context_config($categoryid,$pluginname):\n";
     }
 
-    $path = get_category_path($categoryid);
+    $path        = get_category_path($categoryid);
     $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
+    $a_path      = explode('/', $path_string);
+    $a_rev_path  = array_reverse($a_path);
 
     /*
     * go through the categories starting from nearest to top
@@ -207,72 +214,71 @@ function get_context_config($categoryid, $pluginname = NULL)
     * 3. apply collected settings over the site_modules and return
     */
 
-    $set_collection = array(); //keys should be setting names
+    $set_collection = array(); // Keys should be setting names.
     if (!empty($pluginname)) {
-        //build on these
+        // Build on these.
         $site_settings = $DB->get_records_menu('config_plugins', array('plugin' => $pluginname), '', 'name,value');
         foreach ($a_rev_path as $catid) {
             $a_cur = $DB->get_records("cat_config_plugins", array('category_id' => $catid, 'plugin' => $pluginname));
             foreach ($a_cur as $cur) {
-                eclassDebug("Found config plugin: " . $pluginname . ": " . $cur->name . " value: ". $cur->value . " in cat $catid");
+                eclass_debug(
+                    "Found config plugin: " . $pluginname . ": " . $cur->name . " value: " . $cur->value . " in cat $catid");
                 if (!array_key_exists($cur->name, $set_collection) || $cur->override) {
                     $set_collection[$cur->name] = $cur;
+                } else {
+                    eclass_debug(" (preceded by earlier cat)");
                 }
-                else {
-                    eclassDebug(" (preceded by earlier cat)");
-                }
-                eclassDebug("\n");
+                eclass_debug("\n");
             }
         }
-        return array_merge($site_settings,$set_collection);
-    }
-    //core plugin settings
-    else {
-        //build on these
+        return array_merge($site_settings, $set_collection);
+    } else {
+        // Core plugin settings.
+        // Build on these.
         $site_settings = $DB->get_records_menu('config', array(), '', 'name,value');
         foreach ($a_rev_path as $catid) {
             $a_cur = $DB->get_records("cat_config", array('category_id' => $catid));
             foreach ($a_cur as $cur) {
-                eclassDebug("Found config: " . $cur->name . " value: ". $cur->value . " in cat $catid");
+                eclass_debug("Found config: " . $cur->name . " value: " . $cur->value . " in cat $catid");
 
                 if (!array_key_exists($cur->name, $set_collection) || $cur->override) {
                     $set_collection[$cur->name] = $cur;
+                } else {
+                    eclass_debug(" (preceded by earlier cat)");
                 }
-                else {
-                    eclassDebug(" (preceded by earlier cat)");
-                }
-                eclassDebug("\n");
+                eclass_debug("\n");
             }
         }
-        //augment the standard settings.
-        return array_merge($site_settings,$set_collection);
+        // Augment the standard settings.
+        return array_merge($site_settings, $set_collection);
     }
 }
+
 /**
  * Returns whether the userid has the contextadmin category view capability at the system context level.
  * @param int $userid
  */
-function has_category_view_capability($userid){
+function has_category_view_capability($userid) {
     global $DB;
-    if(is_siteadmin()){
+    if (is_siteadmin()) {
         return true;
     }
 
-    $sql = "select *
+    $sql    = "select *
             from {role_assignments} ra join {role_capabilities} rc ON(ra.roleid=rc.roleid)
             where capability = :capability and ra.userid = :userid and rc.contextid = :ctx";
-    $params = array('capability'=>'mod/contextadmin:viewcategories','userid'=>$userid,'ctx'=>1);
-    $result = $DB->get_records_sql($sql,$params,0,1);
+    $params = array('capability' => 'mod/contextadmin:viewcategories', 'userid' => $userid, 'ctx' => 1);
+    $result = $DB->get_records_sql($sql, $params, 0, 1);
     return !empty($result);
 }
 
-function eclassDebug($msg){
-    if(defined(CONTEXTADMINDEBUG)){
+function eclass_debug($msg) {
+    if (defined(CONTEXTADMINDEBUG)) {
         echo $msg;
     }
 }
 
-// CATEGORY DISPLAY (Functions that list the Categories that are Managed by the current User)
+// CATEGORY DISPLAY (Functions that list the Categories that are Managed by the current User).
 
 /**
  * Recursive function to print out all the categories in a nice format
@@ -288,10 +294,11 @@ function eclassDebug($msg){
  * @param $output variable used to output html during recursion
  * @return mixed
  */
-function print_whole_category_manager_list($category=NULL, $displaylist=NULL, $parentslist=NULL, $depth=-1, $showcourses = true, $branch = '', $visible=false, &$output) {
+function print_whole_category_manager_list($category = null, $displaylist = null, $parentslist = null, $depth = -1,
+                                           $showcourses = true, $branch = '', $visible = false, &$output) {
     global $CFG;
 
-    // maxcategorydepth == 0 meant no limit
+    // Note: maxcategorydepth == 0 meant no limit.
     if (!empty($CFG->maxcategorydepth) && $depth >= $CFG->maxcategorydepth) {
         return;
     }
@@ -302,16 +309,16 @@ function print_whole_category_manager_list($category=NULL, $displaylist=NULL, $p
 
     if ($category) {
 
-        if (!has_capability('moodle/category:viewhiddencategories', get_context_instance(CONTEXT_COURSECAT, $category->id)) && $visible) {
+        if (!has_capability('moodle/category:viewhiddencategories',
+                            get_context_instance(CONTEXT_COURSECAT, $category->id)) && $visible
+        ) {
             $visible = false;
-            $branch = print_category_manager_info($category, $depth, $showcourses, $visible);
-        }
-        else if($visible){
+            $branch  = print_category_manager_info($category, $depth, $showcourses, $visible);
+        } else if ($visible) {
             $branch .= print_category_manager_info($category, $depth, $showcourses, $visible);
             $output .= $branch;
             $branch = '';
-        }
-        else {
+        } else {
             $branch .= print_category_manager_info($category, $depth, $showcourses, $visible);
         }
 
@@ -319,31 +326,33 @@ function print_whole_category_manager_list($category=NULL, $displaylist=NULL, $p
         $category->id = "0";
     }
 
-    if ($categories = get_child_manager_categories($category->id)) {   // Print all the children recursively
+    if ($categories = get_child_manager_categories($category->id)) { // Print all the children recursively.
         $countcats = count($categories);
-        $count = 0;
-        $first = true;
-        $last = false;
+        $count     = 0;
+        $first     = true;
+        $last      = false;
 
         foreach ($categories as $cat) {
-            if(has_capability('moodle/category:viewhiddencategories', get_context_instance(CONTEXT_COURSECAT, $cat->id)) && !$visible) {
+            if (has_capability('moodle/category:viewhiddencategories',
+                               get_context_instance(CONTEXT_COURSECAT, $cat->id)) && !$visible
+            ) {
                 $visible = true;
             }
             $count++;
             if ($count == $countcats) {
                 $last = true;
             }
-            $up = $first ? false : true;
-            $down = $last ? false : true;
+            $up    = $first ? false : true;
+            $down  = $last ? false : true;
             $first = false;
 
-            print_whole_category_manager_list($cat, $displaylist, $parentslist, $depth + 1, $showcourses, $branch, $visible, $output);
+            print_whole_category_manager_list($cat, $displaylist, $parentslist, $depth + 1, $showcourses, $branch, $visible,
+                                              $output);
         }
-    }
-    else {
+    } else {
         $visible = false;
-        $depth = 0;
-        $branch = '';
+        $depth   = 0;
+        $branch  = '';
     }
 }
 
@@ -356,10 +365,10 @@ function print_whole_category_manager_list($category=NULL, $displaylist=NULL, $p
  * @param string $path
  * @return mixed
  */
-function make_categories_manager_list(&$list, &$parents, $requiredcapability = '',$excludeid = 0, $category = NULL, $path = "") {
+function make_categories_manager_list(&$list, &$parents, $requiredcapability = '', $excludeid = 0, $category = null, $path = "") {
     $requiredcapability = '';
 
-    // initialize the arrays if needed
+    // Initialize the arrays if needed.
     if (!is_array($list)) {
         $list = array();
     }
@@ -369,7 +378,7 @@ function make_categories_manager_list(&$list, &$parents, $requiredcapability = '
 
     if (empty($category)) {
         // Start at the top level.
-        $category = new stdClass;
+        $category     = new stdClass;
         $category->id = 0;
     } else {
         // This is the excluded category, don't include it.
@@ -377,12 +386,12 @@ function make_categories_manager_list(&$list, &$parents, $requiredcapability = '
             return;
         }
 
-        $context = get_context_instance(CONTEXT_COURSECAT, $category->id);
+        $context      = get_context_instance(CONTEXT_COURSECAT, $category->id);
         $categoryname = format_string($category->name, true, array('context' => $context));
 
         // Update $path.
         if ($path) {
-            $path = $path.' / '.$categoryname;
+            $path = $path . ' / ' . $categoryname;
         } else {
             $path = $categoryname;
         }
@@ -404,7 +413,7 @@ function make_categories_manager_list(&$list, &$parents, $requiredcapability = '
         foreach ($categories as $cat) {
             if (!empty($category->id)) {
                 if (isset($parents[$category->id])) {
-                    $parents[$cat->id]   = $parents[$category->id];
+                    $parents[$cat->id] = $parents[$category->id];
                 }
                 $parents[$cat->id][] = $category->id;
             }
@@ -423,7 +432,7 @@ function make_categories_manager_list(&$list, &$parents, $requiredcapability = '
 function get_child_manager_categories($parentid) {
     static $allcategories = null;
 
-    // only fill in this variable the first time
+    // Only fill in this variable the first time.
     if (null == $allcategories) {
         $allcategories = array();
 
@@ -445,7 +454,8 @@ function get_child_manager_categories($parentid) {
 
 /**
  * Be careful with this function, there is no check for the capapbility viewhiddencategory This check needs to be done
- * elsewhere if you need this kind of restriction. (This function returns all categories regardless of viewhidden capability. This is needed to show the root of the category you DO have permission to see.
+ * elsewhere if you need this kind of restriction. (This function returns all categories regardless of viewhidden capability.
+ * This is needed to show the root of the category you DO have permission to see.
  * This gives manager context to where their category resides in the hierarchy if the parent category is hidden).
  *
  * @param string $parent
@@ -453,13 +463,13 @@ function get_child_manager_categories($parentid) {
  * @param bool $shallow
  * @return array
  */
-function get_manager_categories($parent='none', $sort=NULL, $shallow=true) {
+function get_manager_categories($parent = 'none', $sort = null, $shallow = true) {
     global $DB;
 
-    if ($sort === NULL) {
+    if ($sort === null) {
         $sort = 'ORDER BY cc.sortorder ASC';
-    } elseif ($sort ==='') {
-        // leave it as empty
+    } else if ($sort === '') {
+        $sort = '';
     } else {
         $sort = "ORDER BY $sort";
     }
@@ -467,14 +477,14 @@ function get_manager_categories($parent='none', $sort=NULL, $shallow=true) {
     list($ccselect, $ccjoin) = context_instance_preload_sql('cc.id', CONTEXT_COURSECAT, 'ctx');
 
     if ($parent === 'none') {
-        $sql = "SELECT cc.* $ccselect
+        $sql    = "SELECT cc.* $ccselect
                   FROM {course_categories} cc
                $ccjoin
                 $sort";
         $params = array();
 
-    } elseif ($shallow) {
-        $sql = "SELECT cc.* $ccselect
+    } else if ($shallow) {
+        $sql    = "SELECT cc.* $ccselect
                   FROM {course_categories} cc
                $ccjoin
                  WHERE cc.parent=?
@@ -482,11 +492,11 @@ function get_manager_categories($parent='none', $sort=NULL, $shallow=true) {
         $params = array($parent);
 
     } else {
-        $sql = "SELECT cc.* $ccselect
+        $sql    = "SELECT cc.* $ccselect
                   FROM {course_categories} cc
                $ccjoin
                   JOIN {course_categories} ccp
-                       ON ((cc.parent = ccp.id) OR (cc.path LIKE ".$DB->sql_concat('ccp.path',"'/%'")."))
+                       ON ((cc.parent = ccp.id) OR (cc.path LIKE " . $DB->sql_concat('ccp.path', "'/%'") . "))
                  WHERE ccp.id=?
                 $sort";
         $params = array($parent);
@@ -494,9 +504,9 @@ function get_manager_categories($parent='none', $sort=NULL, $shallow=true) {
     $categories = array();
 
     $rs = $DB->get_recordset_sql($sql, $params);
-    foreach($rs as $cat) {
+    foreach ($rs as $cat) {
         context_instance_preload($cat);
-        $catcontext = get_context_instance(CONTEXT_COURSECAT, $cat->id);
+        $catcontext           = get_context_instance(CONTEXT_COURSECAT, $cat->id);
         $categories[$cat->id] = $cat;
     }
     $rs->close();
@@ -511,7 +521,7 @@ function get_manager_categories($parent='none', $sort=NULL, $shallow=true) {
  *
  *  This function is only used by print_whole_manager_category_list() above
  */
-function print_category_manager_info($category, $depth=0, $showcourses = false, $visible) {
+function print_category_manager_info($category, $depth = 0, $showcourses = false, $visible) {
     global $CFG, $DB, $OUTPUT;
     $output = '';
 
@@ -519,86 +529,87 @@ function print_category_manager_info($category, $depth=0, $showcourses = false, 
 
     $catlinkcss = null;
     if (!$category->visible) {
-        $catlinkcss = array('class'=>'dimmed');
+        $catlinkcss = array('class' => 'dimmed');
     }
     static $coursecount = null;
     if (null === $coursecount) {
-        // only need to check this once
+        // Only need to check this once.
         $coursecount = $DB->count_records('course') <= FRONTPAGECOURSELIMIT;
     }
 
-    if($visible) {
-        $catimage = '<img src="'.$OUTPUT->pix_url('i/course') . '" alt="" />&nbsp;';
-    }
-    else {
-        $catimage = '<img src="'.$OUTPUT->pix_url('courseclosed','local_contextadmin') . '" alt="" />&nbsp;';
+    if ($visible) {
+        $catimage = '<img src="' . $OUTPUT->pix_url('i/course') . '" alt="" />&nbsp;';
+    } else {
+        $catimage = '<img src="' . $OUTPUT->pix_url('courseclosed', 'local_contextadmin') . '" alt="" />&nbsp;';
     }
 
-    $courses = get_courses($category->id, 'c.sortorder ASC', 'c.id,c.sortorder,c.visible,c.fullname,c.shortname,c.summary');
-    $context = get_context_instance(CONTEXT_COURSECAT, $category->id);
+    $courses  = get_courses($category->id, 'c.sortorder ASC', 'c.id,c.sortorder,c.visible,c.fullname,c.shortname,c.summary');
+    $context  = get_context_instance(CONTEXT_COURSECAT, $category->id);
     $fullname = format_string($category->name, true, array('context' => $context));
 
     $output .= '<div class="categorylist clearfix">';
     $cat = '';
-    $cat .= html_writer::tag('div', $catimage, array('class'=>'image'));
-    if($visible) {
-        $catlink = html_writer::link(new moodle_url('/course/category.php', array('id'=>$category->id)), $fullname, $catlinkcss);
-        $cat .= html_writer::tag('div', $catlink, array('class'=>'name'));
-    }
-    else {
-        $cat .= html_writer::tag('div', $fullname, array('class'=>'name'));
+    $cat .= html_writer::tag('div', $catimage, array('class' => 'image'));
+    if ($visible) {
+        $catlink = html_writer::link(new moodle_url('/course/category.php', array('id' => $category->id)), $fullname, $catlinkcss);
+        $cat .= html_writer::tag('div', $catlink, array('class' => 'name'));
+    } else {
+        $cat .= html_writer::tag('div', $fullname, array('class' => 'name'));
     }
 
     $html = '';
     if ($depth > 0) {
-        for ($i=0; $i< $depth; $i++) {
-            $html = html_writer::tag('div', $html . $cat, array('class'=>'indentation'));
-            $cat = '';
+        for ($i = 0; $i < $depth; $i++) {
+            $html = html_writer::tag('div', $html . $cat, array('class' => 'indentation'));
+            $cat  = '';
         }
     } else {
         $html = $cat;
     }
-    $output .= html_writer::tag('div', $html, array('class'=>'category'));
-    $output .= html_writer::tag('div', '', array('class'=>'clearfloat'));
+    $output .= html_writer::tag('div', $html, array('class' => 'category'));
+    $output .= html_writer::tag('div', '', array('class' => 'clearfloat'));
 
-    // does the depth exceed maxcategorydepth
-    // maxcategorydepth == 0 or unset meant no limit
-    $limit = !(isset($CFG->maxcategorydepth) && ($depth >= $CFG->maxcategorydepth-1));
+    // Does the depth exceed maxcategorydepth.
+    // Note: maxcategorydepth == 0 or unset meant no limit.
+    $limit = !(isset($CFG->maxcategorydepth) && ($depth >= $CFG->maxcategorydepth - 1));
     if ($courses && ($limit || $CFG->maxcategorydepth == 0) && $showcourses) {
         $output .= '<br>';
         foreach ($courses as $course) {
             $linkcss = null;
             if (!$course->visible) {
-                $linkcss = array('class'=>'dimmed');
+                $linkcss = array('class' => 'dimmed');
             }
 
-            $courselink = html_writer::link(new moodle_url('/course/view.php', array('id'=>$course->id)), format_string($course->fullname), $linkcss);
+            $courselink = html_writer::link(new moodle_url('/course/view.php', array('id' => $course->id)),
+                                            format_string($course->fullname), $linkcss);
 
-            // print enrol info
+            // Print enrol info.
             $courseicon = '';
             if ($icons = enrol_get_course_info_icons($course)) {
                 foreach ($icons as $pix_icon) {
-                    $courseicon = $OUTPUT->render($pix_icon).' ';
+                    $courseicon = $OUTPUT->render($pix_icon) . ' ';
                 }
             }
 
-            $coursecontent = html_writer::tag('div', $courseicon.$courselink, array('class'=>'name'));
+            $coursecontent = html_writer::tag('div', $courseicon . $courselink, array('class' => 'name'));
 
             if ($course->summary) {
-                $link = new moodle_url('/course/info.php?id='.$course->id);
-                $actionlink = $OUTPUT->action_link($link, '<img alt="'.$strsummary.'" src="'.$OUTPUT->pix_url('i/info') . '" />',
-                    new popup_action('click', $link, 'courseinfo', array('height' => 400, 'width' => 500)),
-                    array('title'=>$strsummary));
+                $link       = new moodle_url('/course/info.php?id=' . $course->id);
+                $actionlink = $OUTPUT->action_link($link,
+                                                   '<img alt="' . $strsummary . '" src="' . $OUTPUT->pix_url('i/info') . '" />',
+                                                   new popup_action('click', $link, 'courseinfo', array('height' => 400,
+                                                                                                        'width'  => 500)),
+                                                   array('title' => $strsummary));
 
-                $coursecontent .= html_writer::tag('div', $actionlink, array('class'=>'info'));
+                $coursecontent .= html_writer::tag('div', $actionlink, array('class' => 'info'));
             }
 
             $html = '';
-            for ($i=0; $i <= $depth; $i++) {
-                $html = html_writer::tag('div', $html . $coursecontent , array('class'=>'indentation'));
+            for ($i = 0; $i <= $depth; $i++) {
+                $html          = html_writer::tag('div', $html . $coursecontent, array('class' => 'indentation'));
                 $coursecontent = '';
             }
-            $output .= html_writer::tag('div', $html, array('class'=>'course clearfloat'));
+            $output .= html_writer::tag('div', $html, array('class' => 'course clearfloat'));
         }
     }
     $output .= '</div>';
@@ -611,8 +622,8 @@ function print_category_manager_info($category, $depth=0, $showcourses = false, 
  * @param $pluginname
  * @return mixed|string
  */
-function get_context_module_settings($categoryid,$pluginname) {
-    return get_category_plugin_values($categoryid,$pluginname,'modules');
+function get_context_module_settings($categoryid, $pluginname) {
+    return get_category_plugin_values($categoryid, $pluginname, 'modules');
 }
 
 /**
@@ -621,8 +632,8 @@ function get_context_module_settings($categoryid,$pluginname) {
  * @param $pluginname
  * @param $values
  */
-function set_context_module_settings($categoryid,$pluginname, $values) {
-    set_category_plugin_values($categoryid,$pluginname,'modules', $values);
+function set_context_module_settings($categoryid, $pluginname, $values) {
+    set_category_plugin_values($categoryid, $pluginname, 'modules', $values);
 }
 
 /**
@@ -631,8 +642,8 @@ function set_context_module_settings($categoryid,$pluginname, $values) {
  * @param $pluginname
  * @return mixed|string
  */
-function get_context_block_settings($categoryid,$pluginname) {
-    return get_category_plugin_values($categoryid,$pluginname,'block');
+function get_context_block_settings($categoryid, $pluginname) {
+    return get_category_plugin_values($categoryid, $pluginname, 'block');
 }
 
 /**
@@ -641,8 +652,8 @@ function get_context_block_settings($categoryid,$pluginname) {
  * @param $pluginname
  * @param $values
  */
-function set_context_block_settings($categoryid,$pluginname, $values) {
-    set_category_plugin_values($categoryid,$pluginname,'block', $values);
+function set_context_block_settings($categoryid, $pluginname, $values) {
+    set_category_plugin_values($categoryid, $pluginname, 'block', $values);
 }
 
 /**
@@ -663,17 +674,16 @@ function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
         return null;
     }
 
-    $validplugins = array('modules', 'block'); //valid types
-    if(!in_array($plugintype,$validplugins)) {
-        debugging('Invalid plugintype passed to get_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+    $validplugins = array('modules', 'block'); // Valid types.
+    if (!in_array($plugintype, $validplugins)) {
+        debugging('Invalid plugintype passed to get_category_plugin_values in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
         return null;
     }
 
-
-    $path = get_category_path($categoryid);
+    $path        = get_category_path($categoryid);
     $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
+    $a_path      = explode('/', $path_string);
+    $a_rev_path  = array_reverse($a_path);
 
     /*
     * go through the categories starting from nearest to top
@@ -681,20 +691,19 @@ function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
     * 2. process records and collect up changes first in collection overrides later ones
     * 3. apply collected settings over the site_modules and return
     */
-    //$set_collection = array(); //keys should be setting names
     $return_value = null;
     if (!empty($pluginname)) {
-        //Use site if no context level exists
+        // Use site if no context level exists.
 
         foreach ($a_rev_path as $catid) {
-            $a_cur = $DB->get_record("cat_".$plugintype, array('name' => $pluginname,'category_id' => $catid));
-            if(!empty($a_cur) && ($a_cur->override || empty($return_value))) {
+            $a_cur = $DB->get_record("cat_" . $plugintype, array('name' => $pluginname, 'category_id' => $catid));
+            if (!empty($a_cur) && ($a_cur->override || empty($return_value))) {
                 $return_value = $a_cur;
             }
         }
 
         $site_settings = $DB->get_record($plugintype, array('name' => $pluginname));
-        //Merge the objects together so that the extra fields in the site_settings record exist in the returned object
+        // Merge the objects together so that the extra fields in the site_settings record exist in the returned object.
         $return_value = (object)array_merge((array)$site_settings, (array)$return_value);
         return $return_value;
     }
@@ -710,48 +719,46 @@ function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
 function set_category_plugin_values($categoryid, $pluginname, $plugintype, $values) {
     global $DB;
 
-    //todo need to check rest of tree for locks above it.
+    // Todo need to check rest of tree for locks above it.
 
-    $validplugins = array('modules', 'block'); //valid types
-    if(!in_array($plugintype,$validplugins)) {
-        debugging('Invalid plugintype passed to set_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+    $validplugins = array('modules', 'block'); // Valid types.
+    if (!in_array($plugintype, $validplugins)) {
+        debugging('Invalid plugintype passed to set_category_plugin_values in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
         return;
     }
 
     if (CONTEXTADMINDEBUG) {
-        echo "set_category_plugin_values($categoryid,$pluginname,$plugintype ".print_r($values,true)."):\n";
+        echo "set_category_plugin_values($categoryid,$pluginname,$plugintype, $values):\n";
     }
 
-    if(!empty($pluginname) && !empty($categoryid)) {
-        if($record = $DB->get_record('cat_'.$plugintype,array('category_id' => $categoryid, 'name' => $pluginname))) {
-            //update
-            foreach($values as $key=>$value) {
+    if (!empty($pluginname) && !empty($categoryid)) {
+        if ($record = $DB->get_record('cat_' . $plugintype, array('category_id' => $categoryid, 'name' => $pluginname))) {
+            // Update.
+            foreach ($values as $key => $value) {
                 $record->$key = $value;
             }
-            //update db
-            $DB->update_record('cat_'.$plugintype,$record);
-        }
-        else {
-            //create
-            $record = new stdClass();
-            $record->name = $pluginname;
+            // Update db.
+            $DB->update_record('cat_' . $plugintype, $record);
+        } else {
+            // Create.
+            $record              = new stdClass();
+            $record->name        = $pluginname;
             $record->category_id = $categoryid;
-            $record = (object) array_merge((array)$record, (array)$values);
-            //insert into db
-            $DB->insert_record('cat_'.$plugintype,$record);
+            $record              = (object)array_merge((array)$record, (array)$values);
+            // Insert into db.
+            $DB->insert_record('cat_' . $plugintype, $record);
         }
-    }
-    else {
+    } else {
         throw new Exception("set_category_plugin_values missing arguments ($categoryid, $pluginname)");
     }
 }
 
 function remove_category_module_values($categoryid, $pluginname) {
-    remove_category_plugin_values($categoryid,$pluginname,'modules');
+    remove_category_plugin_values($categoryid, $pluginname, 'modules');
 }
 
 function remove_category_block_values($categoryid, $pluginname) {
-    remove_category_plugin_values($categoryid,$pluginname,'block');
+    remove_category_plugin_values($categoryid, $pluginname, 'block');
 }
 
 /**
@@ -763,11 +770,11 @@ function remove_category_block_values($categoryid, $pluginname) {
 function remove_category_plugin_values($categoryid, $pluginname, $plugintype) {
     global $DB;
 
-    //todo need to check rest of tree for locks above it.
+    // Todo need to check rest of tree for locks above it.
 
-    $validplugins = array('modules', 'block'); //valid types
-    if(!in_array($plugintype,$validplugins)) {
-        debugging('Invalid plugintype passed to set_category_plugin_values in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+    $validplugins = array('modules', 'block'); // Valid types.
+    if (!in_array($plugintype, $validplugins)) {
+        debugging('Invalid plugintype passed to set_category_plugin_values in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
         return;
     }
 
@@ -775,11 +782,10 @@ function remove_category_plugin_values($categoryid, $pluginname, $plugintype) {
         echo "remove_category_plugin_values($categoryid,$pluginname,$plugintype):\n";
     }
 
-    if(!empty($pluginname) && !empty($categoryid)) {
-        $DB->delete_records('cat_'.$plugintype,array('category_id' => $categoryid, 'name' => $pluginname));
+    if (!empty($pluginname) && !empty($categoryid)) {
+        $DB->delete_records('cat_' . $plugintype, array('category_id' => $categoryid, 'name' => $pluginname));
 
-    }
-    else {
+    } else {
         throw new Exception("set_category_plugin_values missing arguments ($categoryid, $pluginname)");
     }
 }
@@ -792,7 +798,7 @@ function remove_category_plugin_values($categoryid, $pluginname, $plugintype) {
  *
  */
 function is_module_locked($categoryid, $pluginname) {
-    return is_plugin_locked($categoryid,$pluginname,'modules');
+    return is_plugin_locked($categoryid, $pluginname, 'modules');
 }
 
 /**
@@ -803,7 +809,7 @@ function is_module_locked($categoryid, $pluginname) {
  *
  */
 function is_block_locked($categoryid, $pluginname) {
-    return is_plugin_locked($categoryid,$pluginname,'block');
+    return is_plugin_locked($categoryid, $pluginname, 'block');
 }
 
 /**
@@ -824,19 +830,18 @@ function is_plugin_locked($categoryid, $pluginname, $plugintype) {
         return null;
     }
 
-    $validplugins = array('modules', 'block'); //valid types
-    if(!in_array($plugintype,$validplugins)) {
-        debugging('Invalid plugintype passed to is_plugin_locked in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+    $validplugins = array('modules', 'block'); // Valid types.
+    if (!in_array($plugintype, $validplugins)) {
+        debugging('Invalid plugintype passed to is_plugin_locked in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
         return null;
     }
 
-
-    $path = get_category_path($categoryid);
+    $path        = get_category_path($categoryid);
     $path_string = ltrim($path, '/');
-    $a_path = explode('/', $path_string);
-    $a_rev_path = array_reverse($a_path);
+    $a_path      = explode('/', $path_string);
+    $a_rev_path  = array_reverse($a_path);
 
-    //Remove the first element. We can't lock ourselves.
+    // Remove the first element. We can't lock ourselves.
     array_shift($a_rev_path);
 
     /*
@@ -846,11 +851,13 @@ function is_plugin_locked($categoryid, $pluginname, $plugintype) {
     * 3. apply collected settings over the site_modules and return
     */
     if (!empty($pluginname)) {
-        //Use site if no context level exists
+        // Use site if no context level exists.
 
         foreach ($a_rev_path as $catid) {
 
-            if($DB->get_field("cat_".$plugintype, 'locked', array('name' => $pluginname,'category_id' => $catid, 'locked'=>1))) {
+            if ($DB->get_field("cat_" . $plugintype, 'locked',
+                               array('name' => $pluginname, 'category_id' => $catid, 'locked' => 1))
+            ) {
                 return true;
             }
         }
@@ -858,12 +865,12 @@ function is_plugin_locked($categoryid, $pluginname, $plugintype) {
     }
 }
 
-function category_module_exists($categoryid,$pluginname){
-    return category_plugin_exists($categoryid,$pluginname,'modules');
+function category_module_exists($categoryid, $pluginname) {
+    return category_plugin_exists($categoryid, $pluginname, 'modules');
 }
 
-function category_block_exists($categoryid,$pluginname){
-    return category_plugin_exists($categoryid,$pluginname,'block');
+function category_block_exists($categoryid, $pluginname) {
+    return category_plugin_exists($categoryid, $pluginname, 'block');
 }
 
 /**
@@ -873,7 +880,7 @@ function category_block_exists($categoryid,$pluginname){
  * @param $plugintype
  * @return bool
  */
-function category_plugin_exists($categoryid, $pluginname, $plugintype){
+function category_plugin_exists($categoryid, $pluginname, $plugintype) {
     global $DB;
     if (CONTEXTADMINDEBUG) {
         echo "category_plugin_exists($categoryid,$pluginname, $plugintype):\n";
@@ -883,21 +890,21 @@ function category_plugin_exists($categoryid, $pluginname, $plugintype){
         return false;
     }
 
-    $validplugins = array('modules', 'block'); //valid types
-    if(!in_array($plugintype,$validplugins)) {
-        debugging('Invalid plugintype passed to category_plugin_exists in local/contextadmin/locallib.php',DEBUG_DEVELOPER);
+    $validplugins = array('modules', 'block'); // Valid types.
+    if (!in_array($plugintype, $validplugins)) {
+        debugging('Invalid plugintype passed to category_plugin_exists in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
         return false;
     }
 
-    //Use site if no context level exists
-    return $DB->record_exists("cat_".$plugintype, array('name' => $pluginname,'category_id' => $categoryid));
+    // Use site if no context level exists.
+    return $DB->record_exists("cat_" . $plugintype, array('name' => $pluginname, 'category_id' => $categoryid));
 }
 
-function print_cat_course_search($value="", $return=false, $format="plain") {
+function print_cat_course_search($value = "", $return = false, $format = "plain") {
     global $CFG;
     static $count = 0;
 
-    $perpagevalues = array(10,20,30,50,100);
+    $perpagevalues = array(10, 20, 30, 50, 100);
 
     $count++;
 
@@ -907,34 +914,37 @@ function print_cat_course_search($value="", $return=false, $format="plain") {
         $id .= $count;
     }
 
-    $strsearchcourses= get_string("searchcourses");
+    $strsearchcourses = get_string("searchcourses");
 
     if ($format == 'plain') {
-        $output  = '<form id="'.$id.'" action="'.$CFG->wwwroot.'/local/contextadmin/cat_search.php" method="get">';
+        $output = '<form id="' . $id . '" action="' . $CFG->wwwroot . '/local/contextadmin/cat_search.php" method="get">';
         $output .= '<fieldset class="coursesearchbox invisiblefieldset">';
-        $output .= '<label for="coursesearchbox">'.$strsearchcourses.': </label>';
-        $output .= '<input type="text" id="coursesearchbox" size="30" name="search" value="'.s($value).'" />';
+        $output .= '<label for="coursesearchbox">' . $strsearchcourses . ': </label>';
+        $output .= '<input type="text" id="coursesearchbox" size="30" name="search" value="' . s($value) . '" />';
         $output .= '<br><label for="perpagebox">Results per page:</label>';
         $output .= '<select name="perpage">';
-        foreach($perpagevalues as $value) {
-            $output .= '<option value="'.$value.'">'.$value.'</option>';
+        foreach ($perpagevalues as $value) {
+            $output .= '<option value="' . $value . '">' . $value . '</option>';
         }
         $output .= '</select>';
-        $output .= '<input type="submit" value="'.get_string('go').'" />';
+        $output .= '<input type="submit" value="' . get_string('go') . '" />';
         $output .= '</fieldset></form>';
     } else if ($format == 'short') {
-        $output  = '<form id="'.$id.'" action="'.$CFG->wwwroot.'/local/contextadmin/cat_search.php" method="get">';
+        $output = '<form id="' . $id . '" action="' . $CFG->wwwroot . '/local/contextadmin/cat_search.php" method="get">';
         $output .= '<fieldset class="coursesearchbox invisiblefieldset">';
-        $output .= '<label for="shortsearchbox">'.$strsearchcourses.': </label>';
-        $output .= '<input type="text" id="shortsearchbox" size="12" name="search" alt="'.s($strsearchcourses).'" value="'.s($value).'" />';
-        $output .= '<input type="submit" value="'.get_string('go').'" />';
+        $output .= '<label for="shortsearchbox">' . $strsearchcourses . ': </label>';
+        $output .= '<input type="text" id="shortsearchbox" size="12" name="search" alt="' . s($strsearchcourses) . '" value="' .
+            s($value) . '" />';
+        $output .= '<input type="submit" value="' . get_string('go') . '" />';
         $output .= '</fieldset></form>';
     } else if ($format == 'navbar') {
-        $output  = '<form id="coursesearchnavbar" action="'.$CFG->wwwroot.'/local/contextadmin/cat_search.php" method="get">';
+        $output = '<form id="coursesearchnavbar" action="' . $CFG->wwwroot . '/local/contextadmin/cat_search.php" method="get">';
         $output .= '<fieldset class="coursesearchbox invisiblefieldset">';
-        $output .= '<label for="navsearchbox">'.$strsearchcourses.': </label>';
-        $output .= '<input type="text" id="navsearchbox" size="20" name="search" alt="'.s($strsearchcourses).'" value="'.s($value).'" />';
-        $output .= '<input type="submit" value="'.get_string('go').'" />';
+        $output .= '<label for="navsearchbox">' . $strsearchcourses . ': </label>';
+        $output .=
+            '<input type="text" id="navsearchbox" size="20" name="search" alt="' . s($strsearchcourses) . '" value="' . s($value) .
+                '" />';
+        $output .= '<input type="submit" value="' . get_string('go') . '" />';
         $output .= '</fieldset></form>';
     }
 
@@ -953,15 +963,15 @@ function print_cat_course_search($value="", $return=false, $format="plain") {
  * @param $a_inputs
  * @return string
  */
-function create_form($outputobject, $id, $target, $link_title, $icon, $a_inputs){
+function create_form($outputobject, $id, $target, $link_title, $icon, $a_inputs) {
     $form = "<form id=\"$id\" method=\"post\" action=\"$target\">";
-    foreach($a_inputs as $name=>$value){
+    foreach ($a_inputs as $name => $value) {
         $form .= "<input type='hidden' name='$name' value='$value'/>";
     }
 
-    $form .="<a href=\"#\" onclick='document.getElementById(\"$id\").submit();' title=\"$link_title\">".
+    $form .= "<a href=\"#\" onclick='document.getElementById(\"$id\").submit();' title=\"$link_title\">" .
         "<img src=\"" . $outputobject->pix_url("i/$icon") . "\" class=\"icon\" alt=\"$link_title\" /></a>";
 
-    $form .='</form>';
+    $form .= '</form>';
     return $form;
 }
