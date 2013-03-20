@@ -69,41 +69,10 @@ if ($CFG->forcelogin) {
     require_login();
 }
 
-//Editing is possible if user have system or category level create and manage capability
-//if (can_edit_in_category() || !empty($usercatlist)) {
-//    if ($edit !== -1) {
-//        $USER->editing = $edit;
-//    }
-//    $adminediting = $PAGE->user_is_editing();
-//
-//    // Set perpage if user can edit in category
-//    if ($perpage != 99999) {
-//        $perpage = 30;
-//    }
-//} else {
-    $adminediting = false;
-//}
 
-/// Editing functions
-//if (has_capability('moodle/course:visibility', context_system::instance())) {
-//    /// Hide or show a course
-//    if ($hide or $show and confirm_sesskey()) {
-//        if ($hide) {
-//            $course = $DB->get_record("course", array("id"=>$hide));
-//            $visible = 0;
-//        } else {
-//            $course = $DB->get_record("course", array("id"=>$show));
-//            $visible = 1;
-//        }
-//        if ($course) {
-//            $DB->set_field("course", "visible", $visible, array("id"=>$course->id));
-//        }
-//    }
-//}
-
+$adminediting = false;
 $displaylist = array();
 $parentlist = array();
-//make_categories_list($displaylist, $parentlist);
 
 $displaylist = $usercatlist;
 $parentlist = $catparentlist;
@@ -216,113 +185,6 @@ if ($courses) {
             print_course($course, $search);
             echo $OUTPUT->spacer(array('height'=>5, 'width'=>5, 'br'=>true)); // should be done with CSS instead
         }
-    } else { //editing mode
-        echo "<form id=\"movecourses\" action=\"cat_search.php\" method=\"post\">\n";
-        echo "<div><input type=\"hidden\" name=\"sesskey\" value=\"".sesskey()."\" />\n";
-        echo "<input type=\"hidden\" name=\"search\" value=\"".s($search)."\" />\n";
-        echo "<input type=\"hidden\" name=\"page\" value=\"$page\" />\n";
-        echo "<input type=\"hidden\" name=\"perpage\" value=\"$perpage\" /></div>\n";
-        if (!empty($modulelist) and confirm_sesskey()) {
-            echo "<input type=\"hidden\" name=\"modulelist\" value=\"$modulelist\" /></div>\n";
-        } else if (!empty($blocklist) and confirm_sesskey()) {
-            echo "<input type=\"hidden\" name=\"blocklist\" value=\"$blocklist\" /></div>\n";
-        }
-        echo "<table border=\"0\" cellspacing=\"2\" cellpadding=\"4\" class=\"generalbox boxaligncenter\">\n<tr>\n";
-        echo "<th scope=\"col\">$strcourses</th>\n";
-        echo "<th scope=\"col\">$strcategory</th>\n";
-        echo "<th scope=\"col\">$strselect</th>\n";
-        echo "<th scope=\"col\">$stredit</th></tr>\n";
-
-        foreach ($courses as $course) {
-
-            $coursecontext = context_course::instance($course->id);
-
-            $linkcss = $course->visible ? "" : " class=\"dimmed\" ";
-
-            // are we displaying the front page (courseid=1)?
-            if ($course->id == 1) {
-                echo "<tr>\n";
-                echo "<td><a href=\"$CFG->wwwroot\">$strfrontpage</a></td>\n";
-
-                // can't do anything else with the front page
-                echo "  <td>&nbsp;</td>\n"; // category place
-                echo "  <td>&nbsp;</td>\n"; // select place
-                echo "  <td>&nbsp;</td>\n"; // edit place
-                echo "</tr>\n";
-                continue;
-            }
-
-            echo "<tr>\n";
-            echo "<td><a $linkcss href=\"view.php?id=$course->id\">"
-                . highlight($search, format_string($course->fullname)) . "</a></td>\n";
-            echo "<td>".$displaylist[$course->category]."</td>\n";
-            echo "<td>\n";
-
-            // If user has all required capabilities to move course then show selectable checkbox
-            if (has_all_capabilities($capabilities, $coursecontext)) {
-                echo "<input type=\"checkbox\" name=\"c$course->id\" />\n";
-            } else {
-                echo "<input type=\"checkbox\" name=\"c$course->id\" disabled=\"disabled\" />\n";
-            }
-
-            echo "</td>\n";
-            echo "<td>\n";
-
-            // checks whether user can update course settings
-            if (has_capability('moodle/course:update', $coursecontext)) {
-                echo "<a title=\"".get_string("settings")."\" href=\"$CFG->wwwroot/course/edit.php?id=$course->id\">\n<img".
-                    " src=\"" . $OUTPUT->pix_url('t/edit') . "\" class=\"iconsmall\" alt=\"".get_string("settings")."\" /></a>\n ";
-            }
-
-            // checks whether user can do role assignment
-            if (has_capability('moodle/course:enrolreview', $coursecontext)) {
-                echo'<a title="'.get_string('enrolledusers', 'enrol').'" href="'.$CFG->wwwroot.'/enrol/users.php?id='.$course->id.'">';
-                echo '<img src="'.$OUTPUT->pix_url('i/users') . '" class="iconsmall" alt="'.get_string('enrolledusers', 'enrol').'" /></a> ' . "\n";
-            }
-
-            // checks whether user can delete course
-            if (has_capability('moodle/course:delete', $coursecontext)) {
-                echo "<a title=\"".get_string("delete")."\" href=\"delete.php?id=$course->id\">\n<img".
-                    " src=\"" . $OUTPUT->pix_url('t/delete') . "\" class=\"iconsmall\" alt=\"".get_string("delete")."\" /></a>\n ";
-            }
-
-            // checks whether user can change visibility
-            if (has_capability('moodle/course:visibility', $coursecontext)) {
-                if (!empty($course->visible)) {
-                    echo "<a title=\"".get_string("hide")."\" href=\"cat_search.php?search=$encodedsearch&amp;perpage=$perpage&amp;page=$page&amp;hide=$course->id&amp;sesskey=".sesskey()."\">\n<img".
-                        " src=\"" . $OUTPUT->pix_url('t/hide') . "\" class=\"iconsmall\" alt=\"".get_string("hide")."\" /></a>\n ";
-                } else {
-                    echo "<a title=\"".get_string("show")."\" href=\"cat_search.php?search=$encodedsearch&amp;perpage=$perpage&amp;page=$page&amp;show=$course->id&amp;sesskey=".sesskey()."\">\n<img".
-                        " src=\"" . $OUTPUT->pix_url('t/show') . "\" class=\"iconsmall\" alt=\"".get_string("show")."\" /></a>\n ";
-                }
-            }
-
-            // checks whether user can do site backup
-            if (has_capability('moodle/backup:backupcourse', $coursecontext)) {
-                $backupurl = new moodle_url('/backup/backup.php', array('id' => $course->id));
-                echo "<a title=\"".get_string("backup")."\" href=\"".$backupurl."\">\n<img".
-                    " src=\"" . $OUTPUT->pix_url('t/backup') . "\" class=\"iconsmall\" alt=\"".get_string("backup")."\" /></a>\n ";
-            }
-
-            // checks whether user can do restore
-            if (has_capability('moodle/restore:restorecourse', $coursecontext)) {
-                $restoreurl = new moodle_url('/backup/restorefile.php', array('contextid' => $coursecontext->id));
-                echo "<a title=\"".get_string("restore")."\" href=\"".$restoreurl."\">\n<img".
-                    " src=\"" . $OUTPUT->pix_url('t/restore') . "\" class=\"iconsmall\" alt=\"".get_string("restore")."\" /></a>\n ";
-            }
-
-            echo "</td>\n</tr>\n";
-        }
-        echo "<tr>\n<td colspan=\"4\" style=\"text-align:center\">\n";
-        echo "<br />";
-        echo "<input type=\"button\" onclick=\"checkall()\" value=\"$strselectall\" />\n";
-        echo "<input type=\"button\" onclick=\"checknone()\" value=\"$strdeselectall\" />\n";
-        //Select box should only show categories in which user has min capability to move course.
-        echo html_writer::select($usercatlist, 'moveto', '', array(''=>get_string('moveselectedcoursesto')), array('id'=>'movetoid'));
-        $PAGE->requires->js_init_call('M.util.init_select_autosubmit', array('movecourses', 'movetoid', false));
-        echo "</td>\n</tr>\n";
-        echo "</table>\n</form>";
-
     }
 
     print_navigation_bar($totalcount,$page,$perpage,$encodedsearch,$modulelink);
