@@ -33,7 +33,8 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2010 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class local_contextadmin_renderer extends plugin_renderer_base {
+class local_contextadmin_renderer extends plugin_renderer_base
+{
 
     /**
      * Render the index page.
@@ -44,17 +45,15 @@ class local_contextadmin_renderer extends plugin_renderer_base {
     public function index_page($detected, array $actions) {
         global $DB;
 
-        if($detected == 'System Context') {
+        if ($detected == 'System Context') {
             $output = '';
             $output .= $this->output->header();
             $output .= $this->output->heading(get_string('pluginname', 'local_contextadmin'));
             $output .= $this->output->box_start('generalbox categorybox');
             $output .= $actions[0];
             $output .= $this->output->box_end();
-            //$output .= html_writer::end_tag('form');
             $output .= $this->footer();
-        }
-        else if($detected == 'Category Context'){
+        } else if ($detected == 'Category Context') {
             $output = '';
             $output .= $this->header();
             $output .= $this->heading(get_string('pluginname', 'local_contextadmin'));
@@ -86,8 +85,8 @@ class local_contextadmin_renderer extends plugin_renderer_base {
      * @return string html to output.
      */
     public function end_of_page_link($url, $text) {
-        return html_writer::tag('div', html_writer::link($url ,$text),
-                array('class' => 'mdl-align'));
+        return html_writer::tag('div', html_writer::link($url, $text),
+                                array('class' => 'mdl-align'));
     }
 
     /**
@@ -96,6 +95,6 @@ class local_contextadmin_renderer extends plugin_renderer_base {
      */
     public function back_to_index() {
         return $this->end_of_page_link(local_contextadmin_url('index'),
-                get_string('backtoindex', 'local_contextadmin'));
+                                       get_string('backtoindex', 'local_contextadmin'));
     }
 }

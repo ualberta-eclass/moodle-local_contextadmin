@@ -25,26 +25,26 @@
 
 $string['pluginname'] = 'Context Administrator';
 
-// Navigation Strings
+// Navigation Strings.
 $string['catadmin'] = 'Category administration';
-$string['search'] = 'Course Search';
-// Advanced Features node
+$string['search']   = 'Course Search';
+// Advanced Features node.
 $string['advanced'] = 'Advanced features';
-$string['mycat'] = 'My categories';
-$string['courses'] = 'Courses';
-// Plugin Node
-$string['plugins'] = 'Plugins';
+$string['mycat']    = 'My categories';
+$string['courses']  = 'Courses';
+// Plugin Node.
+$string['plugins']         = 'Plugins';
 $string['pluginsoverview'] = 'Plugins Overview';
-$string['blocks'] = 'Blocks';
-$string['repos'] = 'Repositories';
-// Plugins -> Activity modules
-$string['activity'] = 'Activity modules';
-$string['manage'] = 'Manage activities';
-$string['manageblocks'] = 'Manage Blocks';
-$string['managerepos'] = 'Manage Repositories';
-$string['clear_title'] = 'Clear Category Record';
+$string['blocks']          = 'Blocks';
+$string['repos']           = 'Repositories';
+// Plugins -> Activity modules.
+$string['activity']       = 'Activity modules';
+$string['manage']         = 'Manage activities';
+$string['manageblocks']   = 'Manage Blocks';
+$string['managerepos']    = 'Manage Repositories';
+$string['clear_title']    = 'Clear Category Record';
 $string['override_title'] = 'Override Below';
-$string['locked_title'] = 'Lock Below';
-$string['clear'] = 'Clear Visibility';
-$string['modulelocked'] = 'Module is locked in a context above this one.';
-$string['modulelocked'] = 'Block is locked in a context above this one.';
+$string['locked_title']   = 'Lock Below';
+$string['clear']          = 'Clear Visibility';
+$string['modulelocked']   = 'Module is locked in a context above this one.';
+$string['modulelocked']   = 'Block is locked in a context above this one.';

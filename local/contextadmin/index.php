@@ -45,7 +45,7 @@ if ($context->contextlevel != CONTEXT_COURSECAT and $context->contextlevel != CO
     print_error('invalidcontext');
 }
 
-// Set the context  & setup the page
+// Set the context  & setup the page.
 $PAGE->set_url("/local/contextadmin/index.php", array("contextid" => $contextid));
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('standard');
@@ -57,22 +57,21 @@ $renderer = $PAGE->get_renderer('local_contextadmin');
 
 $actions = array();
 
-// Need to load list of categories that this user has access to
-if($context->contextlevel == CONTEXT_SYSTEM) {
+// Need to load list of categories that this user has access to.
+if ($context->contextlevel == CONTEXT_SYSTEM) {
     include_once($CFG->dirroot . '/local/contextadmin/locallib.php');
     include_once($CFG->dirroot . '/course/lib.php');
 
     $test = '';
-    print_whole_category_manager_list(null,null,null,0,false,'',false, $test);
+    print_whole_category_manager_list(null, null, null, 0, false, '', false, $test);
 
     $actions[0] = $test;
     echo $renderer->index_page('System Context', $actions);
-}
-// Load category level settings/links
-else  if($context->contextlevel = CONTEXT_COURSECAT) {
-    // Need to check for permission here
-    //   - 'moodle/site:config'
-    //   - 'mod/contextadmin:manage', $context, where context is a valid category context for that user
+} else if ($context->contextlevel = CONTEXT_COURSECAT) {
+    // Load category level settings/links.
+    // Need to check for permission here.
+    //   - 'moodle/site:config'.
+    //   - 'mod/contextadmin:manage', $context, where context is a valid category context for that user.
     echo $renderer->index_page('Category Context', $actions);
 }
 

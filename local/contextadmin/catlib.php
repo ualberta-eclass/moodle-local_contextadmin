@@ -1,12 +1,18 @@
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: ggibeau
- * Date: 12-03-26
- * Time: 3:40 PM
- */
-
-// INTERFACES -------------------------------------------------------------
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Interface for anything relying on category level settings/configurations
@@ -17,7 +23,8 @@
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-interface part_of_category {
+interface part_of_category
+{
 
     public function check_access();
 
@@ -28,14 +35,14 @@ interface part_of_category {
     public function show_save();
 }
 
-// CLASSES ---------------------------------------------------------------
 
 /**
  * Used to group a number of category_setting objects into a page.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class category_settingpage implements part_of_category {
+class category_settingpage implements part_of_category
+{
 
     /** @var string An internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects */
     public $name;
@@ -66,20 +73,21 @@ class category_settingpage implements part_of_category {
      *
      * @param string $name The internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects.
      * @param string $visiblename The displayed name for this external page. Usually obtained through get_string().
-     * @param mixed $req_capability The role capability/permission a user must have to access this external page. Defaults to 'moodle/site:config'.
+     * @param mixed $req_capability The role capability/permission a user must have to access this external page. Defaults to
+     * 'moodle/site:config'.
      * @param boolean $hidden Is this external page hidden in admin tree block? Default false.
      * @param stdClass $context The context the page relates to. Not sure what happens
      *      if you specify something other than system or front page. Defaults to system.
      */
-    public function __construct($name, $visiblename, $req_capability='moodle/site:config', $context=NULL) {
+    public function __construct($name, $visiblename, $req_capability = 'moodle/site:config', $context = null) {
         global $PAGE;
         $this->visiblename = '';
         $this->settings    = new stdClass();
         $this->name        = $name;
 
-        //Display the category name in the header, gives context to the settings.
+        // Display the category name in the header, gives context to the settings.
         $category = $PAGE->category;
-        $this->visiblename .= $category->name.': ';
+        $this->visiblename .= $category->name . ': ';
 
         $this->visiblename .= ucfirst($visiblename);
         if (is_array($req_capability)) {
@@ -87,13 +95,14 @@ class category_settingpage implements part_of_category {
         } else {
             $this->req_capability = array($req_capability);
         }
-        $this->context     = $context;
+        $this->context = $context;
     }
 
     /**
-     * adds a category_setting to this category_settingpage
+     * Adds a category_setting to this category_settingpage
      *
-     * not the same as add for admin_category. adds an admin_setting to this admin_settingpage. settings appear (on the settingpage) in the order in which they're added
+     * not the same as add for admin_category. adds an admin_setting to this admin_settingpage. settings appear (on the settingpage)
+     * in the order in which they're added.
      * n.b. each admin_setting in an admin_settingpage must have a unique internal name
      *
      * @param object $setting is the admin_setting object you want to add
@@ -114,9 +123,10 @@ class category_settingpage implements part_of_category {
      * @return bool Returns true for yes false for no
      */
     public function check_access() {
-        //This should fail for non site admins if context is not set higher or equal to course category.  Not even category managers have access to categories when in the system context.
+        // This should fail for non site admins if context is not set higher or equal to course category.
+        // Not even category managers have access to categories when in the system context.
         $context = empty($this->context) ? get_context_instance(CONTEXT_SYSTEM) : $this->context;
-        foreach($this->req_capability as $cap) {
+        foreach ($this->req_capability as $cap) {
             if (has_capability($cap, $context)) {
                 return true;
             }
@@ -129,16 +139,10 @@ class category_settingpage implements part_of_category {
      * @return string Returns an XHTML string
      */
     public function output_html() {
-        //$adminroot = admin_get_root();
-        $return = '<fieldset>'."\n".'<div class="clearer"><!-- --></div>'."\n";
-        foreach($this->settings as $setting) {
+        $return = '<fieldset>' . "\n" . '<div class="clearer"><!-- --></div>' . "\n";
+        foreach ($this->settings as $setting) {
             $fullname = $setting->get_full_name();
-//            if (array_key_exists($fullname, $adminroot->errors)) {
-//                $data = $adminroot->errors[$fullname]->data;
-//            } else {
-                $data = $setting->get_setting();
-                // do not use defaults if settings not available - upgrade settings handles the defaults!
-            //}
+            $data = $setting->get_setting();
             $return .= $setting->output_html($data);
         }
         $return .= '</fieldset>';
@@ -150,19 +154,18 @@ class category_settingpage implements part_of_category {
      * @return bool
      */
     public function show_save() {
-        foreach($this->settings as $setting) {
+        foreach ($this->settings as $setting) {
             if (empty($setting->nosave)) {
                 return true;
             }
         }
         return false;
     }
+
     public function get_settings() {
         return $this->settings;
     }
 }
-
-
 
 
 /**
@@ -175,12 +178,12 @@ function cat_write_settings($formdata, $settingspage) {
     global $CFG, $SITE, $DB;
 
     $olddbsessions = !empty($CFG->dbsessions);
-    $formdata = (array)$formdata;
+    $formdata      = (array)$formdata;
 
     $data = array();
-    foreach ($formdata as $fullname=>$value) {
+    foreach ($formdata as $fullname => $value) {
         if (strpos($fullname, 's_') !== 0) {
-            continue; // not a config value
+            continue; // NHot a config value.
         }
         $data[$fullname] = $value;
     }
@@ -195,7 +198,7 @@ function cat_write_settings($formdata, $settingspage) {
     }
 
     $count = 0;
-    foreach ($settings as $fullname=>$setting) {
+    foreach ($settings as $fullname => $setting) {
         $error = $setting->write_setting($data[$fullname]);
         if ($error == '') {
 
@@ -213,7 +216,7 @@ function cat_write_settings($formdata, $settingspage) {
 
     // Now update $SITE - just update the fields, in case other people have a
     // a reference to it (e.g. $PAGE, $COURSE).
-    $newsite = $DB->get_record('course', array('id'=>$SITE->id));
+    $newsite = $DB->get_record('course', array('id' => $SITE->id));
     foreach (get_object_vars($newsite) as $field => $value) {
         $SITE->$field = $value;
     }
