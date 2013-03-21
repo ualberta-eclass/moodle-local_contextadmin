@@ -1509,8 +1509,19 @@ abstract class admin_setting {
             return $value === false ? NULL : $value;
 
         } else {
-            $value = get_config('', $name);             //eClass Modification
-            return $value === false ? NULL : $value;    //eClass Modification
+            /*********** eClass Modification ************
+            First Author:  Trevor Jones
+            Initial Date:  Feb 24 2012
+            Last Author:   Trevor Jones
+            Date Changed:  Feb 24, 2013
+
+            Extra Comments: Modified to allow overriding of configuration values via get_config
+             * March 21, 2013: Changed to lowercase null for Moodle code conventions
+
+             ************/
+            $value = get_config('', $name);
+            return $value === false ? null : $value;
+            /*********** End eClass Modification ********/
         }
     }
 
@@ -1522,7 +1533,7 @@ abstract class admin_setting {
      * @return bool Write setting to config table
      */
     public function config_write($name, $value) {
-        global $DB, $USER, $CFG, $COURSE, $PAGE;        //eClass Modification
+        global $DB, $USER, $CFG, $COURSE, $PAGE;        // eClass Modification.
         if ($this->nosave) {
             return true;
         }
@@ -1546,6 +1557,11 @@ abstract class admin_setting {
         }
 
         /*********** eClass Modification ************
+        First Author:  Trevor Jones
+        Initial Date:  Feb 24, 2012
+        Last Author:   Trevor Jones
+        Date Changed:  Feb 24, 2012
+
         Extra Comments: These modifications to the core code give an extra layer of logging.  If we are changing category level settings then we log the category id
          * along with the other required logging information.
          ************/

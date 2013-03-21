@@ -1281,6 +1281,11 @@ function html_is_blank($string) {
  */
 function set_config($name, $value, $plugin=NULL) {
     /*********** eClass Modification ************
+    First Author:  Trevor Jones
+    Initial Date:  Feb 24, 2012
+    Last Author:   Trevor Jones
+    Date Changed:  Feb 24, 2012
+
     Extra Comments: These modifications to the core code give an extra layer of administrative usability.
     Category level settings for all settings are checked here.
     ************/
@@ -1417,6 +1422,11 @@ function set_config($name, $value, $plugin=NULL) {
  */
 function get_config($plugin, $name = NULL) {
     /*********** eClass Modification ************
+    First Author:  Trevor Jones
+    Initial Date:  Feb 24, 2012
+    Last Author:   Trevor Jones
+    Date Changed:  Feb 24, 2012
+
     Extra Comments: These modifications to the core code give an extra layer of administrative usability.
     Category level settings for all settings are checked here.
 
