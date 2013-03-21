@@ -366,7 +366,12 @@ class block_manager {
         global $DB, $COURSE, $CFG;
 
         /*********** eClass Modification ************
-         * Extra Comments: Performance may need to be looked at.  Possible caching could be useful.
+        First Author:  Greg Gibeau
+        Initial Date:  February 2nd 2012
+        Last Author:   Greg Gibeau
+        Date Changed:  February 2nd 2012
+
+        Extra Comments: Performance may need to be looked at.  Possible caching could be useful.
          ************/
         /**
          * Retrieves the list of installed blocks based off of category administration.

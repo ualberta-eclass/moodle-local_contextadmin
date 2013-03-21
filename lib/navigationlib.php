@@ -2918,9 +2918,21 @@ class settings_navigation extends navigation_node {
         }
 
         $settings = $this->load_user_settings($this->page->course->id);
-        if (isloggedin() && !isguestuser()) {      //eClass Modification
-            $this->load_category_administration(); //eClass Modification
-        }                                          //eClass Modification
+        /*********** eClass Modification ************
+        First Author:  Greg Gibeau
+        Initial Date:  May 22 2012
+        Last Author:   Trevor Jones
+        Date Changed:  March 21, 2013
+
+        Extra Comments: Embed category administration into the settings block
+         * June 18, 2012: Added check for login.
+         * March 21, 2013: Changed comment style.
+
+         ************/
+        if (isloggedin() && !isguestuser()) {
+            $this->load_category_administration();
+        }
+        /*********** End eClass Modification ********/
 
         if (isloggedin() && !isguestuser() && (!property_exists($SESSION, 'load_navigation_admin') || $SESSION->load_navigation_admin)) {
             $admin = $this->load_administration_settings();
