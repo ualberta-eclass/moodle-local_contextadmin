@@ -163,7 +163,7 @@ foreach ($modules as $current_module) {
                        $context)
     ) {
         $settings_td =
-            "<a href=\"cat_settings.php?section=modsetting$current_module->name&name=$current_module->name&contextid=$contextid\">\
+            "<a href=\"cat_settings.php?section=modsetting$current_module->name&name=$current_module->name&contextid=$contextid\">
             $strsettings</a>";
     } else {
         $settings_td = "";
