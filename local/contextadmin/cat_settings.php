@@ -19,6 +19,12 @@ require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
 require_once($CFG->dirroot . '/local/contextadmin/catlib.php');
 
+/*
+ *  Must require this library explicitly due to an incompatibility with how it is referenced by the imsenterprise plugin.
+ *  This is required in order to use the admin_settings classes for our category settings.
+ */
+require_once($CFG->dirroot . '/enrol/imsenterprise/locallib.php');
+
 $section      = required_param('section', PARAM_SAFEDIR);
 $modname      = required_param('name', PARAM_ALPHA);
 $context_id   = required_param('contextid', PARAM_INT);
