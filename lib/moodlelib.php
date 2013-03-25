@@ -1211,7 +1211,7 @@ function html_is_blank($string) {
  * @return bool true or exception
  */
 function set_config($name, $value, $plugin=NULL) {
-    /*********** eClass Modification ************
+    /*********** local_contextadmin Modification ************
     First Author:  Trevor Jones
     Initial Date:  Feb 24, 2012
     Last Author:   Trevor Jones
@@ -1332,7 +1332,7 @@ function set_config($name, $value, $plugin=NULL) {
             }
         }
     }
-    /*********** End eClass Modification ********/
+    /*********** End local_contextadmin Modification ********/
 
     return true;
 }
@@ -1352,7 +1352,7 @@ function set_config($name, $value, $plugin=NULL) {
  * @return mixed hash-like object or single value, return false no config found
  */
 function get_config($plugin, $name = NULL) {
-    /*********** eClass Modification ************
+    /*********** local_contextadmin Modification ************
     First Author:  Trevor Jones
     Initial Date:  Feb 24, 2012
     Last Author:   Trevor Jones
@@ -1450,7 +1450,7 @@ function get_config($plugin, $name = NULL) {
         else{
             $localcfg = $DB->get_records_menu('config', array(), '', 'name,value');
         }
-        /*********** End eClass Modification ********/
+        /*********** End local_contextadmin Modification ********/
         foreach($CFG->config_php_settings as $n=>$v) {
             if (is_null($v) or is_array($v) or is_object($v)) {
                 // we do not want any extra mess here, just real settings that could be saved in db

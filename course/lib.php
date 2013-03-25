@@ -1213,7 +1213,7 @@ function get_all_mods($courseid, &$mods, &$modnames, &$modnamesplural, &$modname
     $modnamesplural= array();    // all course module names (plural form)
     $modnamesused  = array();    // course module names used
 
-    /*********** eClass Modification ************
+    /*********** local_contextadmin Modification ************
     First Author:  Greg Gibeau
     Initial Date:  February 2nd 2012
     Last Author:   Greg Gibeau
@@ -1232,7 +1232,7 @@ function get_all_mods($courseid, &$mods, &$modnames, &$modnamesplural, &$modname
     }
 
     if ($allmods) {
-    /*********** End eClass Modification ********/
+    /*********** End local_contextadmin Modification ********/
         foreach ($allmods as $mod) {
             if (!file_exists("$CFG->dirroot/mod/$mod->name/lib.php")) {
                 continue;
