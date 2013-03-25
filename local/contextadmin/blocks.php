@@ -52,29 +52,28 @@ $param_locked     = optional_param('locked', null, PARAM_BOOL);
 $param_block_name = optional_param('block_name', '', PARAM_SAFEDIR);
 
 // Print headings.
-$strmanageblocks     = get_string('manageblocks');
-$strhide             = get_string('hide');
-$strshow             = get_string('show');
-$strsettings         = get_string('settings');
-$strname             = get_string('name');
-$strshowblockcourse  = get_string('showblockcourse');
-$strclear_heading    = get_string('clear_title', 'local_contextadmin');
-$stroverride_heading = get_string('override_title', 'local_contextadmin');
-$strlocked_heading   = get_string('locked_title', 'local_contextadmin');
-$strsettings         = get_string("settings");
-$strblocks           = get_string("blocks");
-$stractivitymodule   = get_string("activitymodule");
-$strshowmodulecourse = get_string('showmodulecourse');
+$strmanageblocks           = get_string('manageblocks');
+$strhide                   = get_string('hide');
+$strshow                   = get_string('show');
+$strsettings               = get_string('settings');
+$strname                   = get_string('name');
+$strshowblockcourse        = get_string('showblockcourse');
+$strclear_heading          = get_string('clear_title', 'local_contextadmin');
+$stroverride_heading       = get_string('override_title', 'local_contextadmin');
+$stroverride_value_heading = get_string('override_value_title', 'local_contextadmin');
+$strlocked_heading         = get_string('locked_title', 'local_contextadmin');
+$strsettings               = get_string("settings");
+$strblocks                 = get_string("blocks");
+$stractivitymodule         = get_string("activitymodule");
+$strshowmodulecourse       = get_string('showmodulecourse');
 
 
 // If data submitted, then process and store.
-if ((!empty($param_block_name)) and confirm_sesskey() && has_capability('mod/contextadmin:changevisibilty', $context)) {
+if ((!empty($param_block_name)) and confirm_sesskey() && has_capability('mod/contextadmin:changevisibilty', $context) &&
+                                !is_plugin_locked($catid, $param_module_name,
+                                'modules')) {
 
-    $module = $DB->get_record("block", array("name" => $param_block_name));
-
-    if (!$module) {
-        print_error('noblocks', 'error');
-    } else {
+    if ($DB->get_record("block", array("name" => $param_block_name))) {
         if (!is_plugin_locked($catid, $param_block_name, 'block')) {
             if ($param_visible !== null) {
 
@@ -92,6 +91,8 @@ if ((!empty($param_block_name)) and confirm_sesskey() && has_capability('mod/con
         } else {
             print_error('blocklocked', 'local_contextadmin');
         }
+    } else {
+        print_error('noblocks', 'error');
     }
 }
 
@@ -117,13 +118,15 @@ $incompatible = array();
 $table = new flexible_table('admin-blocks-compatible');
 // TODO: tying the capability to hide/show blocks to the same one for hide/show modules. Might need it's own in the future.
 if (has_capability('mod/contextadmin:editowncatsettings', $context)) {
-    $table->define_columns(array('name', 'hideshow', 'override', 'lock', 'clear'));
-    $table->define_headers(array($stractivitymodule, "$strhide/$strshow", $stroverride_heading, $strlocked_heading,
-                               $strclear_heading));
+    $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear', 'settings'));
+    $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
+                               $strlocked_heading,
+                               $strclear_heading, $strsettings));
 } else if (has_capability('mod/contextadmin:changevisibilty', $context)) {
     // User can not edit settings for modules but can hide/show.
-    $table->define_columns(array('name', 'hideshow', 'clear', 'override', 'lock', 'clear'));
-    $table->define_headers(array($stractivitymodule, "$strhide/$strshow", $stroverride_heading, $strlocked_heading,
+    $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear'));
+    $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
+                               $strlocked_heading,
                                $strclear_heading));
 } else {
     $table->define_columns(array('name'));
@@ -135,86 +138,148 @@ $table->set_attribute('class', 'compatibleblockstable blockstable generaltable')
 $table->setup();
 $tablerows = array();
 
-foreach ($blocks as $blockid => $blockraw) {
-    $visible_td  = '';
-    $clear_td    = '';
-    $override_td = '';
-    $locked_td   = '';
-    $settings_td = '';
+foreach ($blocks as $blockid => $current_block) {
+    $visible_td        = '';
+    $clear_td          = '';
+    $override_td       = '';
+    $override_value_td = '';
+    $locked_td         = '';
+    $settings_td       = '';
 
-
-    // Get current block settings (hidden/shown, etc..) based off category table cascaded.
-    $block     = get_context_block_settings($catid, $blockraw->name);
-    $blockname = $block->name;
+    // Get current block settings (hidden/shown, etc..) for current category.
+    $category_block = get_context_block_settings($catid, $current_block->name, false);
+    $blockname      = $current_block->name;
 
     if (!file_exists("$CFG->dirroot/blocks/$blockname/block_$blockname.php")) {
-        $blockobject  = false;
         $strblockname = '<span class="notifyproblem">' . $blockname . ' (' . get_string('missingfromdisk') . ')</span>';
         $plugin       = new stdClass();
     } else {
-        $plugin = new stdClass();
-
-        if (file_exists("$CFG->dirroot/blocks/$blockname/version.php")) {
-            include("$CFG->dirroot/blocks/$blockname/version.php");
-        }
-
-        if (!$blockobject = block_instance($block->name)) {
-            $incompatible[] = $block;
-            continue;
-        }
         $strblockname = get_string('pluginname', 'block_' . $blockname);
     }
 
-
     $class = ''; // Nothing fancy, by default.
 
-
     if (has_capability('mod/contextadmin:changevisibilty', $context)) {
-        $self_path = "blocks.php?contextid=$contextid&catid=$catid";
+        $self_path        = "blocks.php?contextid=$contextid&catid=$catid";
+        $is_overridden    = is_block_overridden($catid, $blockname);
+        $is_locked        = is_block_locked($catid, $blockname);
+        $locked_image_tag = create_image_tag($OUTPUT->pix_url('i/hierarchylock'), 'locked in parent category');
+        // Representation of the block if we were to climb the tree.
+        $block_representation = get_context_block_settings($catid, $blockname);
 
-        if (!$blockobject) {
-            // Ignore.
-            $visible_td = '';
-        } else if ($block->visible) {
-            $visible_td = create_form($OUTPUT, $blockname . '_visible_form', $self_path, $strhide, 'hide',
-                                      array('block_name' => $blockname, 'visible' => 'false', 'sesskey' => sesskey()));
-        } else {
-            $visible_td = create_form($OUTPUT, $blockname . '_visible_form', $self_path, $strshow, 'show',
-                                      array('block_name' => $blockname, 'visible' => 'true', 'sesskey' => sesskey()));
-            $class      = ' class="dimmed_text"'; // Leading space required!
+        // For each section provide a form if it is not locked. If it is locked only show icons.
+        // If the block is overridden then show the overridden value in front of the category's value.
+        if ($is_overridden) {
+            if ($block_representation->visible) {
+                $override_value_td .= create_image_tag($OUTPUT->pix_url('i/hide'), get_string('visible_alt',
+                                                                                              'local_contextadmin'), 'overridden');
+            } else {
+                $override_value_td .= create_image_tag($OUTPUT->pix_url('i/show'), get_string('not_visible_alt',
+                                                                                              'local_contextadmin'), 'overridden');
+            }
         }
 
-        if (category_block_exists($catid, $blockname)) {
-            $clear_td = create_form($OUTPUT, $blockname . "_clear_form", $self_path, $strhide, 'cross_red_big',
-                                    array('block_name' => $blockname, 'clear' => 'true', 'sesskey' => sesskey()));
+        // Test for existence of this category's module.
+        if ($category_block) {
 
-            if ($block->override) {
-                $override_td = create_form($OUTPUT, $blockname . "_override_form", $self_path, $strhide, 'completion-manual-y',
-                                           array('block_name' => $blockname, 'override' => 'false', 'sesskey' => sesskey()));
-                $class       = '';
+            if ($category_block->visible) {
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/hide'), 'hidden');
+                    $visible_td .= $locked_image_tag;
+
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_block->name . "_visible_form", $self_path, $strhide, 'hide',
+                                               array('block_name' => $current_block->name, 'visible' => 'false',
+                                                     'sesskey'    => sesskey()));
+                }
             } else {
-                $override_td = create_form($OUTPUT, $blockname . "_override_form", $self_path, $strhide, 'completion-manual-n',
-                                           array('block_name' => $blockname, 'override' => 'true', 'sesskey' => sesskey()));
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/show'), 'visible');
+                    $visible_td .= $locked_image_tag;
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_block->name . "_visible_form", $self_path, $strhide, 'show',
+                                               array('block_name' => $current_block->name, 'visible' => 'true',
+                                                     'sesskey'    => sesskey()));
+                    $class = ' class="dimmed_text"';
+                }
             }
 
-            if ($block->locked) {
-                $locked_td = create_form($OUTPUT, $blockname . "_locked_form", $self_path, $strhide, 'completion-manual-y',
-                                         array('block_name' => $blockname, 'locked' => 'false', 'sesskey' => sesskey()));
-                $class     = '';
-            } else {
-                $locked_td = create_form($OUTPUT, $blockname . "_locked_form", $self_path, $strhide, 'completion-manual-n',
-                                         array('block_name' => $blockname, 'locked' => 'true', 'sesskey' => sesskey()));
+            if (!$is_locked) {
+                $clear_td = create_form($OUTPUT, $current_block->name . "_clear_form", $self_path, $strhide, 'cross_red_big',
+                                        array('block_name' => $current_block->name, 'clear' => 'true', 'sesskey' => sesskey()));
             }
 
+            if ($category_block->override) {
+
+                if (!$is_locked) {
+                    $override_td =
+                        create_form($OUTPUT, $current_block->name . "_override_form", $self_path, $strhide, 'completion-manual-y',
+                                    array('block_name' => $current_block->name, 'override' => 'false', 'sesskey' => sesskey()));
+                    $class       = '';
+                } else {
+                    $override_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
+                }
+            } else {
+                if (!$is_locked) {
+                    $override_td =
+                        create_form($OUTPUT, $current_block->name . "_override_form", $self_path, $strhide, 'completion-manual-n',
+                                    array('block_name' => $current_block->name, 'override' => 'true', 'sesskey' => sesskey()));
+                } else {
+                    $override_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-n'), 'locked in parent category');
+                }
+            }
+
+            if ($category_block->locked) {
+                if (!$is_locked) {
+                    $locked_td =
+                        create_form($OUTPUT, $current_block->name . "_locked_form", $self_path, $strhide, 'completion-manual-y',
+                                    array('block_name' => $current_block->name, 'locked' => 'false', 'sesskey' => sesskey()));
+                    $class     = '';
+                } else {
+                    $locked_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
+                }
+            } else {
+                if (!$is_locked) {
+                    $locked_td =
+                        create_form($OUTPUT, $current_block->name . "_locked_form", $self_path, $strhide, 'completion-manual-n',
+                                    array('block_name' => $current_block->name, 'locked' => 'true', 'sesskey' => sesskey()));
+                } else {
+                    $locked_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-n'), 'locked in parent category');
+                }
+            }
+        } else { // Nothing set at this category so lets show the current representation instead.
+
+            if ($block_representation->visible) {
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/hide'), 'hidden');
+                    $visible_td .= $locked_image_tag;
+
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_block->name . "_visible_form", $self_path, $strhide, 'hide',
+                                               array('block_name' => $current_block->name, 'visible' => 'false',
+                                                     'sesskey'    => sesskey()));
+                }
+            } else {
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/show'), 'visible');
+                    $visible_td .= $locked_image_tag;
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_block->name . "_visible_form", $self_path, $strhide, 'show',
+                                               array('block_name' => $current_block->name, 'visible' => 'true',
+                                                     'sesskey'    => sesskey()));
+                    $class = ' class="dimmed_text"';
+                }
+            }
         }
-
     }
 
     $tabledata   = array('<span' . $class . '>' . $blockname . '</span>');
+    $tabledata[] = $override_value_td;
     $tabledata[] = $visible_td;
     $tabledata[] = $override_td;
     $tabledata[] = $locked_td;
     $tabledata[] = $clear_td;
+    $tabledata[] = $settings_td;
 
     $table->add_data($tabledata);
 }

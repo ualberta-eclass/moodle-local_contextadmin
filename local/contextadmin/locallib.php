@@ -620,10 +620,11 @@ function print_category_manager_info($category, $depth = 0, $showcourses = false
  * Convenience method to retrieve settings for module
  * @param $categoryid
  * @param $pluginname
+ * @param bool $climb
  * @return mixed|string
  */
-function get_context_module_settings($categoryid, $pluginname) {
-    return get_category_plugin_values($categoryid, $pluginname, 'modules');
+function get_context_module_settings($categoryid, $pluginname, $climb = true) {
+    return get_category_plugin_values($categoryid, $pluginname, 'modules', $climb);
 }
 
 /**
@@ -640,10 +641,11 @@ function set_context_module_settings($categoryid, $pluginname, $values) {
  * Convenience method to retrieve settings for block
  * @param $categoryid
  * @param $pluginname
+ * @param bool $climb
  * @return mixed|string
  */
-function get_context_block_settings($categoryid, $pluginname) {
-    return get_category_plugin_values($categoryid, $pluginname, 'block');
+function get_context_block_settings($categoryid, $pluginname, $climb = true) {
+    return get_category_plugin_values($categoryid, $pluginname, 'block', $climb);
 }
 
 /**
@@ -661,23 +663,32 @@ function set_context_block_settings($categoryid, $pluginname, $values) {
  * @param $categoryid
  * @param $pluginname
  * @param $plugintype
- * @return stdclass record
+ * @return stdclass record, false if not found
  *
  */
-function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
+/**
+ * Retrieves the record object for a plugin by climbing the category tree.
+ * If $climb is false then just returns the record of the provided category id
+ * @param $categoryid
+ * @param $pluginname
+ * @param $plugintype
+ * @param bool $climb
+ * @return stdclass record, false if not found
+ * @throws Exception
+ */
+function get_category_plugin_values($categoryid, $pluginname, $plugintype, $climb = true) {
     global $DB;
     if (CONTEXTADMINDEBUG) {
         echo "get_category_plugin_values($categoryid,$pluginname, $plugintype):\n";
     }
 
     if (empty($pluginname)) {
-        return null;
+        throw new Exception("Missing pluginname in get_category_plugin_values");
     }
 
     $validplugins = array('modules', 'block'); // Valid types.
     if (!in_array($plugintype, $validplugins)) {
-        debugging('Invalid plugintype passed to get_category_plugin_values in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
-        return null;
+        throw new Exception("Invalid plugintype in get_category_plugin_values");
     }
 
     $path        = get_category_path($categoryid);
@@ -692,7 +703,8 @@ function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
     * 3. apply collected settings over the site_modules and return
     */
     $return_value = null;
-    if (!empty($pluginname)) {
+
+    if ($climb) {
         // Use site if no context level exists.
 
         foreach ($a_rev_path as $catid) {
@@ -706,6 +718,11 @@ function get_category_plugin_values($categoryid, $pluginname, $plugintype) {
         // Merge the objects together so that the extra fields in the site_settings record exist in the returned object.
         $return_value = (object)array_merge((array)$site_settings, (array)$return_value);
         return $return_value;
+    } else {
+        // Don't climb the tree, just return the record.
+        $catid = array_shift($a_rev_path);
+        return $DB->get_record("cat_" . $plugintype, array('name' => $pluginname, 'category_id' => $catid));
+
     }
 }
 
@@ -865,6 +882,80 @@ function is_plugin_locked($categoryid, $pluginname, $plugintype) {
     }
 }
 
+/**
+ * Checks if there exists a record above that has the override flag set to true
+ * @param $categoryid
+ * @param $pluginname
+ * @return bool true if locked, false if not locked
+ *
+ */
+function is_module_overridden($categoryid, $pluginname) {
+    return is_plugin_overridden($categoryid, $pluginname, 'modules');
+}
+
+/**
+ * Checks if there exists a record above that has the override flag set to true
+ * @param $categoryid
+ * @param $pluginname
+ * @return bool true if locked, false if not locked
+ *
+ */
+function is_block_overridden($categoryid, $pluginname) {
+    return is_plugin_overridden($categoryid, $pluginname, 'block');
+}
+
+/**
+ * Checks if there exists a record above that has the override flag set to true
+ * @param $categoryid
+ * @param $pluginname
+ * @param $plugintype
+ * @return bool true if locked, false if not locked
+ *
+ */
+function is_plugin_overridden($categoryid, $pluginname, $plugintype) {
+    global $DB;
+    if (CONTEXTADMINDEBUG) {
+        echo "is_plugin_locked($categoryid,$pluginname, $plugintype):\n";
+    }
+
+    if (empty($pluginname)) {
+        return null;
+    }
+
+    $validplugins = array('modules', 'block'); // Valid types.
+    if (!in_array($plugintype, $validplugins)) {
+        debugging('Invalid plugintype passed to is_plugin_overridden in local/contextadmin/locallib.php', DEBUG_DEVELOPER);
+        return null;
+    }
+
+    $path        = get_category_path($categoryid);
+    $path_string = ltrim($path, '/');
+    $a_path      = explode('/', $path_string);
+    $a_rev_path  = array_reverse($a_path);
+
+    // Remove the first element. We can't override ourselves.
+    array_shift($a_rev_path);
+
+    /*
+    * go through the categories starting from nearest to top
+    * 1. extract records for current category
+    * 2. process records and collect up changes first in collection overrides later ones
+    * 3. apply collected settings over the site_modules and return
+    */
+    if (!empty($pluginname)) {
+
+        foreach ($a_rev_path as $catid) {
+
+            if ($DB->get_field("cat_" . $plugintype, 'override',
+                               array('name' => $pluginname, 'category_id' => $catid, 'override' => 1))
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 function category_module_exists($categoryid, $pluginname) {
     return category_plugin_exists($categoryid, $pluginname, 'modules');
 }
@@ -974,4 +1065,8 @@ function create_form($outputobject, $id, $target, $link_title, $icon, $a_inputs)
 
     $form .= '</form>';
     return $form;
+}
+
+function create_image_tag($image, $alt, $class = '') {
+    return "<img src=\"" . $image . "\" class=\"$class\" alt=\"$alt\" />";
 }
