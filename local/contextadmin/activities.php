@@ -55,25 +55,24 @@ $param_module_name = optional_param('module_name', '', PARAM_SAFEDIR);
 
 
 // Print headings.
-$stractivities       = get_string("activities");
-$strhide             = get_string("hide");
-$strshow             = get_string("show");
-$strclear_heading    = get_string('clear_title', 'local_contextadmin');
-$stroverride_heading = get_string('override_title', 'local_contextadmin');
-$strlocked_heading   = get_string('locked_title', 'local_contextadmin');
-$strsettings         = get_string("settings");
-$stractivities       = get_string("activities");
-$stractivitymodule   = get_string("activitymodule");
-$strshowmodulecourse = get_string('showmodulecourse');
+$stractivities             = get_string("activities");
+$strhide                   = get_string("hide");
+$strshow                   = get_string("show");
+$strclear_heading          = get_string('clear_title', 'local_contextadmin');
+$stroverride_heading       = get_string('override_title', 'local_contextadmin');
+$strlocked_heading         = get_string('locked_title', 'local_contextadmin');
+$stroverride_value_heading = get_string('override_value_title', 'local_contextadmin');
+$strsettings               = get_string("settings");
+$stractivities             = get_string("activities");
+$stractivitymodule         = get_string("activitymodule");
+$strshowmodulecourse       = get_string('showmodulecourse');
 
 // If data submitted, then process and store.
-if ((!empty($param_module_name)) and confirm_sesskey() && has_capability('mod/contextadmin:changevisibilty', $context)) {
+if ((!empty($param_module_name)) and confirm_sesskey() && has_capability('mod/contextadmin:changevisibilty',
+                                 $context) && !is_plugin_locked($catid, $param_module_name,
+                                 'modules')) {
 
-    $module = $DB->get_record("modules", array("name" => $param_module_name));
-
-    if (!$module) {
-        print_error('moduledoesnotexist', 'error');
-    } else {
+    if ($DB->record_exists("modules", array("name" => $param_module_name))) {
         if (!is_plugin_locked($catid, $param_module_name, 'modules')) {
             if ($param_visible !== null) {
 
@@ -91,6 +90,8 @@ if ((!empty($param_module_name)) and confirm_sesskey() && has_capability('mod/co
         } else {
             print_error('modulelocked', 'local_contextadmin');
         }
+    } else {
+        print_error('moduledoesnotexist', 'error');
     }
 }
 
@@ -119,114 +120,182 @@ if (!$modules = $DB->get_records('modules', array(), 'name ASC')) {
 $table = new flexible_table(MODULE_TABLE);
 // User can edit settings for modules within this category.
 if (has_capability('mod/contextadmin:editowncatsettings', $context)) {
-    $table->define_columns(array('name', 'hideshow', 'override', 'lock', 'clear', 'settings'));
-    $table->define_headers(array($stractivitymodule, "$strhide/$strshow", $stroverride_heading, $strlocked_heading,
+    $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear', 'settings'));
+    $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
+                               $strlocked_heading,
                                $strclear_heading, $strsettings));
 } else if (has_capability('mod/contextadmin:changevisibilty', $context)
 ) { // User can not edit settings for modules but can hide/show.
-    $table->define_columns(array('name', 'hideshow', 'clear', 'override', 'lock', 'clear'));
-    $table->define_headers(array($stractivitymodule, "$strhide/$strshow", $stroverride_heading, $strlocked_heading,
+    $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear'));
+    $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
+                               $strlocked_heading,
                                $strclear_heading));
 } else {
     $table->define_columns(array('name'));
     $table->define_columns(array($stractivitymodule));
 }
 
-
 $table->define_baseurl($CFG->wwwroot . '/' . $CFG->admin . '/modules.php');
 $table->set_attribute('id', 'modules');
 $table->set_attribute('class', 'generaltable');
 $table->setup();
 
-
-foreach ($modules as $module) {
-    $visible_td  = '';
-    $clear_td    = '';
-    $override_td = '';
-    $locked_td   = '';
-    $settings_td = '';
-
+foreach ($modules as $current_module) {
+    $visible_td        = '';
+    $override_value_td = '';
+    $clear_td          = '';
+    $override_td       = '';
+    $locked_td         = '';
+    $settings_td       = '';
 
     // TODO: make a more efficient way to grab initial category modules instead of site level then overriding.
-    $module = get_context_module_settings($catid, $module->name);
-    if (!file_exists("$CFG->dirroot/mod/$module->name/lib.php")) {
-        $strmodulename = '<span class="notifyproblem">' . $module->name . ' (' . get_string('missingfromdisk') . ')</span>';
-        $missing       = true;
+    $category_module = get_context_module_settings($catid, $current_module->name, false);
+    if (!file_exists("$CFG->dirroot/mod/$current_module->name/lib.php")) {
+        $strmodulename = '<span class="notifyproblem">' . $current_module->name . ' (' . get_string('missingfromdisk') . ')</span>';
     } else {
         // Took out hspace="\10\", because it does not validate. don't know what to replace with.
-        $icon          = "<img src=\"" . $OUTPUT->pix_url('icon', $module->name) . "\" class=\"icon\" alt=\"\" />";
-        $strmodulename = $icon . ' ' . get_string('modulename', $module->name);
-        $missing       = false;
+        $icon          = "<img src=\"" . $OUTPUT->pix_url('icon', $current_module->name) . "\" class=\"icon\" alt=\"\" />";
+        $strmodulename = $icon . ' ' . get_string('modulename', $current_module->name);
     }
 
-    if (file_exists("$CFG->dirroot/local/contextadmin/mod/$module->name/cat_settings.php") &&
+    if (file_exists("$CFG->dirroot/local/contextadmin/mod/$current_module->name/cat_settings.php") &&
         has_capability('mod/contextadmin:editowncatsettings',
                        $context)
     ) {
         $settings_td =
-            "<a href=\"cat_settings.php?section=modsetting$module->name&name=$module->name&contextid=$contextid\">$strsettings</a>";
+            "<a href=\"cat_settings.php?section=modsetting$current_module->name&name=$current_module->name&contextid=$contextid\">\
+            $strsettings</a>";
     } else {
         $settings_td = "";
     }
 
-
     $class = '';
+
     // If we can hide/show then create the icons/links.
-    if (has_capability('mod/contextadmin:changevisibilty', $context)) {
-        $self_path = "activities.php?contextid=$contextid&catid=$catid";
+    // Do not show these for forum, changing visibility breaks announcement tool.
+    if (has_capability('mod/contextadmin:changevisibilty', $context) and $current_module->name != "forum") {
+        $self_path        = "activities.php?contextid=$contextid&catid=$catid";
+        $is_locked        = is_module_locked($catid, $current_module->name);
+        $is_overridden    = is_module_overridden($catid, $current_module->name);
+        $locked_image_tag = create_image_tag($OUTPUT->pix_url('i/hierarchylock'), 'locked in parent category');
+        // Representation of the module if we were to climb the tree.
+        $module_representation = get_context_module_settings($catid, $current_module->name);
 
-        if ($missing) {
-            $visible_td = '';
-        } else if ($module->visible) {
-            $visible_td = create_form($OUTPUT, $module->name . "_visible_form", $self_path, $strhide, 'hide',
-                                      array('module_name' => $module->name, 'visible' => 'false', 'sesskey' => sesskey()));
-        } else {
-            $visible_td = create_form($OUTPUT, $module->name . "_visible_form", $self_path, $strhide, 'show',
-                                      array('module_name' => $module->name, 'visible' => 'true', 'sesskey' => sesskey()));
-            $class      = ' class="dimmed_text"';
+
+        // For each section provide a form if it is not locked. If it is locked only show icons.
+        // If the module is overridden then show the overridden value in front of the category's value.
+        if ($is_overridden) {
+            if ($module_representation->visible) {
+                $override_value_td .= create_image_tag($OUTPUT->pix_url('i/hide'), get_string('visible_alt',
+                                                                                              'local_contextadmin'), 'overridden');
+            } else {
+                $override_value_td .= create_image_tag($OUTPUT->pix_url('i/show'), get_string('not_visible_alt',
+                                                                                              'local_contextadmin'), 'overridden');
+            }
         }
 
-        if (category_module_exists($catid, $module->name)) {
-            $clear_td = create_form($OUTPUT, $module->name . "_clear_form", $self_path, $strhide, 'cross_red_big',
-                                    array('module_name' => $module->name, 'clear' => 'true', 'sesskey' => sesskey()));
+        // Test for existence of this category's module.
+        if ($category_module) {
 
-            if ($module->override) {
-                $override_td = create_form($OUTPUT, $module->name . "_override_form", $self_path, $strhide, 'completion-manual-y',
-                                           array('module_name' => $module->name, 'override' => 'false', 'sesskey' => sesskey()));
-                $class       = '';
+            if ($category_module->visible) {
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/hide'), 'hidden');
+                    $visible_td .= $locked_image_tag;
+
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_module->name . "_visible_form", $self_path, $strhide, 'hide',
+                                               array('module_name' => $current_module->name, 'visible' => 'false',
+                                                     'sesskey'     => sesskey()));
+                }
             } else {
-                $override_td = create_form($OUTPUT, $module->name . "_override_form", $self_path, $strhide, 'completion-manual-n',
-                                           array('module_name' => $module->name, 'override' => 'true', 'sesskey' => sesskey()));
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/show'), 'visible');
+                    $visible_td .= $locked_image_tag;
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_module->name . "_visible_form", $self_path, $strhide, 'show',
+                                               array('module_name' => $current_module->name, 'visible' => 'true',
+                                                     'sesskey'     => sesskey()));
+                    $class = ' class="dimmed_text"';
+                }
             }
 
-            if ($module->locked) {
-                $locked_td = create_form($OUTPUT, $module->name . "_locked_form", $self_path, $strhide, 'completion-manual-y',
-                                         array('module_name' => $module->name, 'locked' => 'false', 'sesskey' => sesskey()));
-                $class     = '';
-            } else {
-                $locked_td = create_form($OUTPUT, $module->name . "_locked_form", $self_path, $strhide, 'completion-manual-n',
-                                         array('module_name' => $module->name, 'locked' => 'true', 'sesskey' => sesskey()));
+            if (!$is_locked) {
+                $clear_td = create_form($OUTPUT, $current_module->name . "_clear_form", $self_path, $strhide, 'cross_red_big',
+                                        array('module_name' => $current_module->name, 'clear' => 'true', 'sesskey' => sesskey()));
             }
 
-        }
+            if ($category_module->override) {
 
-        if ($module->name == "forum") {
-            $visible_td  = '';
-            $clear_td    = '';
-            $override_td = '';
-            $locked_td   = '';
-            $settings_td = '';
+                if (!$is_locked) {
+                    $override_td =
+                        create_form($OUTPUT, $current_module->name . "_override_form", $self_path, $strhide, 'completion-manual-y',
+                                    array('module_name' => $current_module->name, 'override' => 'false', 'sesskey' => sesskey()));
+                    $class       = '';
+                } else {
+                    $override_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
+                }
+            } else {
+                if (!$is_locked) {
+                    $override_td =
+                        create_form($OUTPUT, $current_module->name . "_override_form", $self_path, $strhide, 'completion-manual-n',
+                                    array('module_name' => $current_module->name, 'override' => 'true', 'sesskey' => sesskey()));
+                } else {
+                    $override_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-n'), 'locked in parent category');
+                }
+            }
+
+            if ($category_module->locked) {
+                if (!$is_locked) {
+                    $locked_td =
+                        create_form($OUTPUT, $current_module->name . "_locked_form", $self_path, $strhide, 'completion-manual-y',
+                                    array('module_name' => $current_module->name, 'locked' => 'false', 'sesskey' => sesskey()));
+                    $class     = '';
+                } else {
+                    $locked_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
+                }
+            } else {
+                if (!$is_locked) {
+                    $locked_td =
+                        create_form($OUTPUT, $current_module->name . "_locked_form", $self_path, $strhide, 'completion-manual-n',
+                                    array('module_name' => $current_module->name, 'locked' => 'true', 'sesskey' => sesskey()));
+                } else {
+                    $locked_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-n'), 'locked in parent category');
+                }
+            }
+        } else { // Nothing set at this category so lets show the current representation instead.
+
+            if ($module_representation->visible) {
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/hide'), 'hidden');
+                    $visible_td .= $locked_image_tag;
+
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_module->name . "_visible_form", $self_path, $strhide, 'hide',
+                                               array('module_name' => $current_module->name, 'visible' => 'false',
+                                                     'sesskey'     => sesskey()));
+                }
+            } else {
+                if ($is_locked) {
+                    $visible_td .= create_image_tag($OUTPUT->pix_url('i/show'), 'visible');
+                    $visible_td .= $locked_image_tag;
+                } else {
+                    $visible_td .= create_form($OUTPUT, $current_module->name . "_visible_form", $self_path, $strhide, 'show',
+                                               array('module_name' => $current_module->name, 'visible' => 'true',
+                                                     'sesskey'     => sesskey()));
+                    $class = ' class="dimmed_text"';
+                }
+            }
         }
     }
 
     $tabledata   = array('<span' . $class . '>' . $strmodulename . '</span>');
+    $tabledata[] = $override_value_td;
     $tabledata[] = $visible_td;
     $tabledata[] = $override_td;
     $tabledata[] = $locked_td;
     $tabledata[] = $clear_td;
     $tabledata[] = $settings_td;
 
-    // User can not edit settings for modules but can hide/show.
     $table->add_data($tabledata);
 }
 
