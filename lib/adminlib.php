@@ -1509,19 +1509,20 @@ abstract class admin_setting {
             return $value === false ? NULL : $value;
 
         } else {
-            /*********** eClass Modification ************
+            /*********** local_contextadmin Modification ************
             First Author:  Trevor Jones
             Initial Date:  Feb 24 2012
             Last Author:   Trevor Jones
             Date Changed:  Feb 24, 2013
 
-            Extra Comments: Modified to allow overriding of configuration values via get_config
+            Extra Comments: Modified to allow overriding of configuration values via get_config, if $CFG-> used unable to
+            modify with contextadmin
              * March 21, 2013: Changed to lowercase null for Moodle code conventions
 
              ************/
             $value = get_config('', $name);
             return $value === false ? null : $value;
-            /*********** End eClass Modification ********/
+            /*********** End local_contextadmin Modification ********/
         }
     }
 
@@ -1533,7 +1534,7 @@ abstract class admin_setting {
      * @return bool Write setting to config table
      */
     public function config_write($name, $value) {
-        global $DB, $USER, $CFG, $COURSE, $PAGE;        // eClass Modification.
+        global $DB, $USER, $CFG, $COURSE, $PAGE;        // local_contextadmin Modification.
         if ($this->nosave) {
             return true;
         }
@@ -1556,14 +1557,14 @@ abstract class admin_setting {
             rebuild_course_cache(0, true);
         }
 
-        /*********** eClass Modification ************
+        /*********** local_contextadmin Modification ************
         First Author:  Trevor Jones
         Initial Date:  Feb 24, 2012
         Last Author:   Trevor Jones
         Date Changed:  Feb 24, 2012
 
-        Extra Comments: These modifications to the core code give an extra layer of logging.  If we are changing category level settings then we log the category id
-         * along with the other required logging information.
+        Extra Comments: Added for an extra layer of logging.  If we are changing category level settings then we
+         log the category id along with the other required logging information.
          ************/
         if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')) {
             $catadmin_flag = ($COURSE->category > 0) || ($PAGE->context->contextlevel == CONTEXT_COURSECAT);
@@ -1595,7 +1596,7 @@ abstract class admin_setting {
         else {
             $DB->insert_record('config_log', $log);
         }
-        /*********** End eClass Modification ********/
+        /*********** End local_contextadmin Modification ********/
 
         return true; // BC only
     }

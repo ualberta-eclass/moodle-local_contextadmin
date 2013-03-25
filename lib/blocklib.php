@@ -369,7 +369,7 @@ class block_manager {
     public function get_installed_blocks() {
         global $DB, $COURSE, $CFG;
 
-        /*********** eClass Modification ************
+        /*********** local_contextadmin Modification ************
         First Author:  Greg Gibeau
         Initial Date:  February 2nd 2012
         Last Author:   Greg Gibeau
@@ -394,7 +394,7 @@ class block_manager {
                 return $this->allblocks = get_all_blocks($catid);
             }
         }
-        /*********** End eClass Modification ********/
+        /*********** End local_contextadmin Modification ********/
 
         if (is_null($this->allblocks)) {
             $this->allblocks = $DB->get_records('block');

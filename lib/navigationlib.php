@@ -3168,7 +3168,7 @@ class settings_navigation extends navigation_node {
         }
 
         $settings = $this->load_user_settings($this->page->course->id);
-        /*********** eClass Modification ************
+        /*********** local_contextadmin Modification ************
         First Author:  Greg Gibeau
         Initial Date:  May 22 2012
         Last Author:   Trevor Jones
@@ -3182,7 +3182,7 @@ class settings_navigation extends navigation_node {
         if (isloggedin() && !isguestuser()) {
             $this->load_category_administration();
         }
-        /*********** End eClass Modification ********/
+        /*********** End local_contextadmin Modification ********/
 
         if (isloggedin() && !isguestuser() && (!property_exists($SESSION, 'load_navigation_admin') || $SESSION->load_navigation_admin)) {
             $admin = $this->load_administration_settings();
@@ -4220,7 +4220,7 @@ class settings_navigation extends navigation_node {
         $this->cache->volatile();
     }
 
-    /*********** eClass Modification ************
+    /*********** local_contextadmin Modification ************
      * Extra Comments: Most of the functionality of this method has been extracted into the local_contextadmin module in the localnav.php file.
      * This should keep the core changes to a minimum.
      ************/
@@ -4244,7 +4244,7 @@ class settings_navigation extends navigation_node {
         }
         return false;
     }
-    /*********** End eClass Modification ********/
+    /*********** End local_contextadmin Modification ********/
 }
 
 /**
