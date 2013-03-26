@@ -121,7 +121,8 @@ if (!empty($searchterm)) { // Do not do search for empty search request.
     $filtered_courses = array();
     foreach ($courses as $course) {
         if ($context = context_coursecat::instance($course->category)) {
-            $manager = get_role_users(1, $context);
+            $roles = get_roles_with_caps_in_context($context, array('mod/contextadmin:viewcategories'));
+            $manager = get_role_users($roles, $context);
             if (array_key_exists($USER->id, $manager)) {
                 $filtered_courses[] = $course;
             } else {
