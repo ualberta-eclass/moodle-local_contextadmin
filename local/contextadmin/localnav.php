@@ -36,7 +36,8 @@ function get_context_nav(navigation_node $contextnode, $context) {
     $contextnode->add(get_string('search', 'local_contextadmin'), $url, navigation_node::TYPE_SETTING, null, 'search',
                       new pix_icon('i/settings', ''));
 
-    if (has_capability('mod/contextadmin:changevisibilty', $context)) {
+    if (has_capability('mod/contextadmin:changevisibilty', $context) or has_capability('mod/contextadmin:editowncatsettings',
+                                                                                       $context)) {
         $catid = $COURSE->category;
         // There is a scenario where the context is at the course level and the parent category is a system context (not Category).
         // We need to catch it.
