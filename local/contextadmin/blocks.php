@@ -67,11 +67,12 @@ $strblocks                 = get_string("blocks");
 $stractivitymodule         = get_string("activitymodule");
 $strshowmodulecourse       = get_string('showmodulecourse');
 
+$has_edit_settings_capability   = has_capability('mod/contextadmin:editowncatsettings', $context);
+$has_edit_visibility_capability = has_capability('mod/contextadmin:changevisibilty', $context);
 
 // If data submitted, then process and store.
-if ((!empty($param_block_name)) and confirm_sesskey() && has_capability('mod/contextadmin:changevisibilty', $context) &&
-                                !is_plugin_locked($catid, $param_module_name,
-                                'modules')) {
+if ((!empty($param_block_name)) and confirm_sesskey() && ($has_edit_visibility_capability or $has_edit_settings_capability) &&
+    !is_plugin_locked($catid, $param_module_name, 'modules')) {
 
     if ($DB->get_record("block", array("name" => $param_block_name))) {
         if (!is_plugin_locked($catid, $param_block_name, 'block')) {
@@ -117,12 +118,12 @@ $incompatible = array();
 // Print the table of all blocks.
 $table = new flexible_table('admin-blocks-compatible');
 // TODO: tying the capability to hide/show blocks to the same one for hide/show modules. Might need it's own in the future.
-if (has_capability('mod/contextadmin:editowncatsettings', $context)) {
+if ($has_edit_settings_capability) {
     $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear', 'settings'));
     $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
                                $strlocked_heading,
                                $strclear_heading, $strsettings));
-} else if (has_capability('mod/contextadmin:changevisibilty', $context)) {
+} else if ($has_edit_visibility_capability) {
     // User can not edit settings for modules but can hide/show.
     $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear'));
     $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
@@ -130,7 +131,7 @@ if (has_capability('mod/contextadmin:editowncatsettings', $context)) {
                                $strclear_heading));
 } else {
     $table->define_columns(array('name'));
-    $table->define_columns(array($stractivitymodule));
+    $table->define_headers(array($stractivitymodule));
 }
 
 $table->define_baseurl($CFG->wwwroot . '/' . $CFG->admin . '/blocks.php');
@@ -159,7 +160,7 @@ foreach ($blocks as $blockid => $current_block) {
 
     $class = ''; // Nothing fancy, by default.
 
-    if (has_capability('mod/contextadmin:changevisibilty', $context)) {
+    if ($has_edit_visibility_capability or $has_edit_settings_capability) {
         $self_path        = "blocks.php?contextid=$contextid&catid=$catid";
         $is_overridden    = is_block_overridden($catid, $blockname);
         $is_locked        = is_block_locked($catid, $blockname);
@@ -273,13 +274,17 @@ foreach ($blocks as $blockid => $current_block) {
         }
     }
 
-    $tabledata   = array('<span' . $class . '>' . $blockname . '</span>');
-    $tabledata[] = $override_value_td;
-    $tabledata[] = $visible_td;
-    $tabledata[] = $override_td;
-    $tabledata[] = $locked_td;
-    $tabledata[] = $clear_td;
-    $tabledata[] = $settings_td;
+    $tabledata = array('<span' . $class . '>' . $blockname . '</span>');
+    if ($has_edit_visibility_capability or $has_edit_settings_capability) {
+        $tabledata[] = $override_value_td;
+        $tabledata[] = $visible_td;
+        $tabledata[] = $override_td;
+        $tabledata[] = $locked_td;
+        $tabledata[] = $clear_td;
+    }
+    if ($has_edit_settings_capability) {
+        $tabledata[] = $settings_td;
+    }
 
     $table->add_data($tabledata);
 }

@@ -67,10 +67,11 @@ $stractivities             = get_string("activities");
 $stractivitymodule         = get_string("activitymodule");
 $strshowmodulecourse       = get_string('showmodulecourse');
 
+$has_edit_settings_capability   = has_capability('mod/contextadmin:editowncatsettings', $context);
+$has_edit_visibility_capability = has_capability('mod/contextadmin:changevisibilty', $context);
 // If data submitted, then process and store.
-if ((!empty($param_module_name)) and confirm_sesskey() && has_capability('mod/contextadmin:changevisibilty',
-                                 $context) && !is_plugin_locked($catid, $param_module_name,
-                                 'modules')) {
+if ((!empty($param_module_name)) and confirm_sesskey() && ($has_edit_visibility_capability or $has_edit_settings_capability) &&
+    !is_plugin_locked($catid, $param_module_name, 'modules')) {
 
     if ($DB->record_exists("modules", array("name" => $param_module_name))) {
         if (!is_plugin_locked($catid, $param_module_name, 'modules')) {
@@ -114,25 +115,22 @@ if (!$modules = $DB->get_records('modules', array(), 'name ASC')) {
 }
 
 // Print the table of all modules.
-
 // Construct the flexible table ready to display.
-
 $table = new flexible_table(MODULE_TABLE);
 // User can edit settings for modules within this category.
-if (has_capability('mod/contextadmin:editowncatsettings', $context)) {
+if ($has_edit_settings_capability) {
     $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear', 'settings'));
     $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
                                $strlocked_heading,
                                $strclear_heading, $strsettings));
-} else if (has_capability('mod/contextadmin:changevisibilty', $context)
-) { // User can not edit settings for modules but can hide/show.
+} else if ($has_edit_visibility_capability) { // User can not edit settings for modules but can hide/show.
     $table->define_columns(array('name', 'override_value', 'hideshow', 'override', 'lock', 'clear'));
     $table->define_headers(array($stractivitymodule, $stroverride_value_heading, "$strhide/$strshow", $stroverride_heading,
                                $strlocked_heading,
                                $strclear_heading));
 } else {
     $table->define_columns(array('name'));
-    $table->define_columns(array($stractivitymodule));
+    $table->define_headers(array($stractivitymodule));
 }
 
 $table->define_baseurl($CFG->wwwroot . '/' . $CFG->admin . '/modules.php');
@@ -159,8 +157,7 @@ foreach ($modules as $current_module) {
     }
 
     if (file_exists("$CFG->dirroot/local/contextadmin/mod/$current_module->name/cat_settings.php") &&
-        has_capability('mod/contextadmin:editowncatsettings',
-                       $context)
+        $has_edit_settings_capability
     ) {
         $settings_td =
             "<a href=\"cat_settings.php?section=modsetting$current_module->name&name=$current_module->name&contextid=$contextid\">
@@ -173,7 +170,7 @@ foreach ($modules as $current_module) {
 
     // If we can hide/show then create the icons/links.
     // Do not show these for forum, changing visibility breaks announcement tool.
-    if (has_capability('mod/contextadmin:changevisibilty', $context) and $current_module->name != "forum") {
+    if (($has_edit_visibility_capability or $has_edit_settings_capability) and $current_module->name != "forum") {
         $self_path        = "activities.php?contextid=$contextid&catid=$catid";
         $is_locked        = is_module_locked($catid, $current_module->name);
         $is_overridden    = is_module_overridden($catid, $current_module->name);
@@ -288,13 +285,17 @@ foreach ($modules as $current_module) {
         }
     }
 
-    $tabledata   = array('<span' . $class . '>' . $strmodulename . '</span>');
-    $tabledata[] = $override_value_td;
-    $tabledata[] = $visible_td;
-    $tabledata[] = $override_td;
-    $tabledata[] = $locked_td;
-    $tabledata[] = $clear_td;
-    $tabledata[] = $settings_td;
+    $tabledata = array('<span' . $class . '>' . $strmodulename . '</span>');
+    if ($has_edit_visibility_capability or $has_edit_settings_capability) {
+        $tabledata[] = $override_value_td;
+        $tabledata[] = $visible_td;
+        $tabledata[] = $override_td;
+        $tabledata[] = $locked_td;
+        $tabledata[] = $clear_td;
+    }
+    if ($has_edit_settings_capability) {
+        $tabledata[] = $settings_td;
+    }
 
     $table->add_data($tabledata);
 }
