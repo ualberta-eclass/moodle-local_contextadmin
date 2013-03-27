@@ -1,29 +1,42 @@
-QUICK INSTALL
-=============
+# University of Alberta Category Administration Plugin
 
-For the impatient, here is a basic outline of the
-installation process, which normally takes me only
-a few minutes:
+## What does it do
 
-1) Move the Moodle files into your web directory.
+This plugin adds a administrative layer at the category level. It allows non site level administrators to set Moodle site level settings at the category level.
 
-2) Create a single database for Moodle to store all
-   it's tables in (or choose an existing database).
+## How does it work
 
-3) Visit your Moodle site with a browser, you should
-   be taken to the install.php script, which will lead
-   you through creating a config.php file and then
-   setting up Moodle, creating an admin account etc.
+There are two components to this plugin. A local module /local/contextadmin And a small number of Moodle core file changes
+The following files are affected:
+- /course/lib.php
+- /lib/adminlib.php
+- /lib/blocklib.php
+- /lib/moodlelib.php
+- /lib/navigationlib.php
 
-4) Set up a cron task to call the file admin/cron.php
-   every five minutes or so.
+All changes in the above files have been delineated by comments:
+/*********** local_contextadmin Modification ************
+code
+/*********** End local_contextadmin Modification ********/
 
+## Capabilities
 
-For more information, see the INSTALL DOCUMENTATION:
+This plugin adds the following 3 capabilities:
+- contextadmin:editowncatsettings
+    - Category administration menu access
+    - Category administration menu activities/blocks tree access
+    - Toggleing/Overriding/locking visibility of modules
+    - Editing of any available settings for any available modules
+- contextadmin:changevisibilty
+    - Category administration menu access
+    - Category administration menu activities/blocks tree access
+    - Toggleing/Overriding/locking visibility of modules
+- contextadmin:viewcategories
+    - Category administration menu access
 
-   http://docs.moodle.org/en/Installing_Moodle
+## Limitations
 
-
-Good luck and have fun!
-Martin Dougiamas, Lead Developer
+- Currently only blocks and activities are supported.
+- Overriding/Locking is currently only supported for visibility of blocks and activities.
+- Only settings which are fetched using the get_config method are supported. Any $CFG->setting style fetches will not be affected.
 
