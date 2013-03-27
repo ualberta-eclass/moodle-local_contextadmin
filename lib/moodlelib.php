@@ -1243,7 +1243,7 @@ function set_config($name, $value, $plugin=NULL) {
         $plugin = NULL;
     }
 
-    //todo eclass check for override/locked
+    //todo local_contextadmin check for override/locked
 
     //core config setting
     if (empty($plugin)) {
