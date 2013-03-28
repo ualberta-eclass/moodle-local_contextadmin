@@ -1474,7 +1474,7 @@ function get_config($plugin, $name = NULL) {
  */
 function unset_config($name, $plugin=NULL) {
     global $CFG, $DB;
-    //todo eCLASS update of configs
+    //todo local_contextadmin update of configs
     if (empty($plugin)) {
         unset($CFG->$name);
         $DB->delete_records('config', array('name'=>$name));
@@ -1493,7 +1493,7 @@ function unset_config($name, $plugin=NULL) {
  */
 function unset_all_config_for_plugin($plugin) {
     global $DB;
-    //todo update of config plugins
+    //todo local_contextadmin update of config plugins
     $DB->delete_records('config_plugins', array('plugin' => $plugin));
     $like = $DB->sql_like('name', '?', true, true, false, '|');
     $params = array($DB->sql_like_escape($plugin.'_', '|') . '%');
@@ -5849,9 +5849,7 @@ function get_max_upload_sizes($sitebytes=0, $coursebytes=0, $modulebytes=0) {
     $filesize[intval($maxsize)] = display_size($maxsize);
 
     $sizelist = array(10240, 51200, 102400, 512000, 1048576, 2097152,
-                      5242880, 10485760, 20971520, 52428800, 104857600,
-                      209715200, 314572800, 419430400, 524288000, 629145600,
-                      734003200, 838860800, 943718400);
+                      5242880, 10485760, 20971520, 52428800, 104857600);
 
     // Allow maxbytes to be selected if it falls outside the above boundaries
     if (isset($CFG->maxbytes) && !in_array(get_real_size($CFG->maxbytes), $sizelist)) {
