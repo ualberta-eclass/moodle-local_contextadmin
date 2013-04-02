@@ -40,3 +40,29 @@ This plugin adds the following 3 capabilities:
 - Overriding/Locking is currently only supported for visibility of blocks and activities.
 - Only settings which are fetched using the get_config method are supported. Any $CFG->setting style fetches will not be affected.
 
+## Compatible With
+
+- 2.2.x
+
+## Repository
+
+https://github.com/ualberta-eclass/moodle-local_contextadmin
+
+## Installation
+
+### Method 1 - tarball
+
+1. Download and untar from moodle plugin site
+2. Copy local/contextadmin folder into moodleinstall/local/
+3. Use your favorite patching application to apply core patches from core_patches directory
+4. Standard moodle plugin install procedure.
+5. Add new capabilities to any roles as needed.
+
+### Method 2 - git integration
+
+Use if your moodle installation is under git control.
+1. Add github repository as new remote: git remote add contextadmin git://github.com/ualberta-eclass/moodle-local_contextadmin.git
+2. git fetch
+3. checkout your deployment branch.
+4. merge from the moodle version tag matching your development branch base. eg. git merge contextadmin_2.2.3
+
