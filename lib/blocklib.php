@@ -591,6 +591,14 @@ class block_manager {
             $params['subpage1'] = $DB->sql_empty();
             $params['subpage2'] = $DB->sql_empty();
         }
+        /*********** local_contextadmin Modification ************
+        First Author:  Greg Gibeau
+        Initial Date:  February 2nd 2012
+        Last Author:   Greg Gibeau
+        Date Changed:  February 2nd 2012
+
+        Extra Comments: Removed clause limiting to visible blocks, need all to support hierarchy.
+         ************/
         $sql = "SELECT
                     bi.id,
                     bp.id AS blockpositionid,
@@ -625,6 +633,7 @@ class block_manager {
                     COALESCE(bp.region, bi.defaultregion),
                     COALESCE(bp.weight, bi.defaultweight),
                     bi.id";
+        /*********** End local_contextadmin Modification ********/
         $blockinstances = $DB->get_recordset_sql($sql, $params + $parentcontextparams + $pagetypepatternparams);
 
         $this->birecordsbyregion = $this->prepare_per_region_arrays();
