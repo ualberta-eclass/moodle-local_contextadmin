@@ -64,5 +64,5 @@ Use if your moodle installation is under git control.
 1. Add github repository as new remote: git remote add contextadmin git://github.com/ualberta-eclass/moodle-local_contextadmin.git
 2. git fetch
 3. checkout your deployment branch.
-4. merge from the moodle version tag matching your development branch base. eg. git merge contextadmin_2.2.3
+4. merge from the moodle version branch matching your development branch base. eg. git merge contextadmin_22_STABLE
 
