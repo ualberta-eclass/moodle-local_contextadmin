@@ -38,11 +38,11 @@ This plugin adds the following 3 capabilities:
 
 - Currently only blocks and activities are supported.
 - Overriding/Locking is currently only supported for visibility of blocks and activities.
-- Only settings which are fetched using the get_config method are supported. Any $CFG->setting style fetches will not be affected.
+- Only settings which are fetched/set using the get_config/set_config method are supported. Any $CFG->setting style fetches will not be affected. You will have to modify system plugins still using the $CFG-> style. We have a number of plugins we've changed and are working toward sharing those changes through the github repository in the future.
 
 ## Compatible With
 
-- 2.2.x
+- 2.2.3+, may be compatible with previous but not tested.
 
 ## Repository
 
