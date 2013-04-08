@@ -1225,10 +1225,30 @@ function get_array_of_activities($courseid) {
  */
 function get_module_types_names($plural = false) {
     static $modnames = null;
-    global $DB, $CFG;
+    global $DB, $CFG, $COURSE;
     if ($modnames === null) {
         $modnames = array(0 => array(), 1 => array());
-        if ($allmods = $DB->get_records("modules")) {
+
+        /*********** local_contextadmin Modification ************
+        First Author:  Trevor Jones
+        Initial Date:  April 8, 2013
+        Last Author:   Trevor Jones
+        Date Changed:  April 8, 2013
+
+        Extra Comments: These modifications to the core code give an extra layer of administrative usability.
+        Category level show/hide for modules are checked here.
+
+         ************/
+        if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')) {
+            require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
+            $allmods = get_context_modules($COURSE->category);
+        }
+        else {
+            $allmods = $DB->get_records('modules');
+        }
+
+        if ($allmods) {
+        /*********** End local_contextadmin Modification ********/
             foreach ($allmods as $mod) {
                 if (file_exists("$CFG->dirroot/mod/$mod->name/lib.php") && $mod->visible) {
                     $modnames[0][$mod->name] = get_string("modulename", "$mod->name");
