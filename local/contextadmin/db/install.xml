@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="lib/db" VERSION="20110627" COMMENT="XMLDB file for core Moodle tables"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="../../lib/xmldb/xmldb.xsd"
+        >
+    <TABLES>
+        <TABLE NAME="cat_config" COMMENT="Context Scoped Custom Moodle configuration variables" NEXT="cat_config_plugins">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="name"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="value"/>
+                <FIELD NAME="value" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="name" NEXT="category_id"/>
+                <FIELD NAME="category_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" SEQUENCE="false" PREVIOUS="value" NEXT="locked"/>
+                <FIELD NAME="locked" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Column describing whether the current value is locked from change" PREVIOUS="category_id" NEXT="override"/>
+                <FIELD NAME="override" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Specifies whether this field overrides sub category field values" PREVIOUS="locked"/>
+
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="kname_category_id"/>
+                <KEY NAME="kname_category_id" TYPE="unique" FIELDS="name, category_id" PREVIOUS="primary"/>
+            </KEYS>
+        </TABLE>
+        <TABLE NAME="cat_config_plugins" COMMENT="Context Scoped Custom Moodle modules and plugins configuration variables" PREVIOUS="cat_config" NEXT="cat_config_log">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="plugin"/>
+                <FIELD NAME="plugin" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="core" SEQUENCE="false" PREVIOUS="id" NEXT="name"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" PREVIOUS="plugin" NEXT="value"/>
+                <FIELD NAME="value" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="name" NEXT="category_id"/>
+                <FIELD NAME="category_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="value" NEXT="locked"/>
+                <FIELD NAME="locked" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Column describing whether the current value is locked from change" PREVIOUS="category_id" NEXT="override"/>
+                <FIELD NAME="override" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Specifies whether this field overrides sub category field values" PREVIOUS="locked"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="kplugin_name"/>
+                <KEY NAME="kplugin_name" TYPE="unique" FIELDS="plugin, name, category_id" PREVIOUS="primary"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="iname_category_id" UNIQUE="true" FIELDS="name, category_id" NEXT="iplugin_category_id"/>
+                <INDEX NAME="iplugin_category_id" UNIQUE="false" FIELDS="plugin, category_id" PREVIOUS="iname_category_id"/>
+            </INDEXES>
+        </TABLE>
+        <TABLE NAME="cat_config_log" COMMENT="Changes done in Scoped server configuration through special UI" PREVIOUS="cat_config_plugins" NEXT="cat_modules">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="userid"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="id" NEXT="timemodified"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="userid" NEXT="plugin"/>
+                <FIELD NAME="plugin" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" PREVIOUS="timemodified" NEXT="name"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" PREVIOUS="plugin" NEXT="value"/>
+                <FIELD NAME="value" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="name" NEXT="oldvalue"/>
+                <FIELD NAME="oldvalue" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="value" NEXT="category_id"/>
+                <FIELD NAME="category_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="oldvalue"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="kuserid"/>
+                <KEY NAME="kuserid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" PREVIOUS="primary"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="itimemodified" UNIQUE="false" FIELDS="timemodified"/>
+            </INDEXES>
+        </TABLE>
+        <TABLE NAME="cat_modules" COMMENT="modules available in the context" PREVIOUS="cat_config_log" NEXT="cat_block">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="name"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="search"/>
+                <FIELD NAME="search" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="name" NEXT="visible"/>
+                <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="false" DEFAULT="1" SEQUENCE="false" PREVIOUS="search" NEXT="category_id"/>
+                <FIELD NAME="category_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="visible" NEXT="locked"/>
+                <FIELD NAME="locked" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Column describing whether the current value is locked from change" PREVIOUS="category_id" NEXT="override"/>
+                <FIELD NAME="override" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Specifies whether this field overrides sub category field values" PREVIOUS="locked"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="name" UNIQUE="false" FIELDS="name"/>
+            </INDEXES>
+        </TABLE>
+        <TABLE NAME="cat_block" COMMENT="contains visibility of installed blocks for category" PREVIOUS="cat_modules">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="name"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="visible"/>
+                <FIELD NAME="visible" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="false" DEFAULT="1" SEQUENCE="false" PREVIOUS="name" NEXT="category_id"/>
+                <FIELD NAME="category_id" TYPE="int" LENGTH="10" NOTNULL="false" UNSIGNED="false" SEQUENCE="false" PREVIOUS="visible" NEXT="locked"/>
+                <FIELD NAME="locked" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="category_id" NEXT="override"/>
+                <FIELD NAME="override" TYPE="binary" LENGTH="small" NOTNULL="false" SEQUENCE="false" PREVIOUS="locked"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="name" UNIQUE="false" FIELDS="name"/>
+            </INDEXES>
+        </TABLE>
+    </TABLES>
+</XMLDB>

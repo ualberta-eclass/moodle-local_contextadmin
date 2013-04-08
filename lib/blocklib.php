@@ -367,7 +367,30 @@ class block_manager {
      * @return array contents of the block table.
      */
     public function get_installed_blocks() {
-        global $DB;
+        global $DB, $COURSE, $CFG;
+
+        /*********** eClass Modification ************
+         * Extra Comments: Performance may need to be looked at.  Possible caching could be useful.
+         ************/
+        /**
+         * Retrieves the list of installed blocks based off of category administration.
+         * If the category administration module is not installed, core functionality is used.
+         */
+        if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')) {
+            require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
+            $context = $this->page->context;
+
+            if($context->contextlevel == CONTEXT_COURSECAT) {
+                $catid = $context->instanceid;
+                return $this->allblocks = get_all_blocks($catid);
+            }
+            else if($context->contextlevel > CONTEXT_COURSECAT) {
+                $catid = $COURSE->category;
+                return $this->allblocks = get_all_blocks($catid);
+            }
+        }
+        /*********** End eClass Modification ********/
+
         if (is_null($this->allblocks)) {
             $this->allblocks = $DB->get_records('block');
         }
@@ -619,7 +642,6 @@ class block_manager {
                 AND bi.pagetypepattern $pagetypepatterntest
                 AND (bi.subpagepattern IS NULL OR bi.subpagepattern = :subpage2)
                 $visiblecheck
-                AND b.visible = 1
 
                 ORDER BY
                     COALESCE(bp.region, bi.defaultregion),

@@ -1280,50 +1280,123 @@ function html_is_blank($string) {
  * @return bool true or exception
  */
 function set_config($name, $value, $plugin=NULL) {
-    global $CFG, $DB;
+    /*********** eClass Modification ************
+    Extra Comments: These modifications to the core code give an extra layer of administrative usability.
+    Category level settings for all settings are checked here.
+    ************/
+    global $CFG, $DB, $COURSE, $PAGE;
 
+    //only include the core change if the plugin is available.
+    if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')){
+        require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
+        //category administration if its not the site level category
+        $catadmin_flag = ($COURSE->category > 0) || ($PAGE->context->contextlevel == CONTEXT_COURSECAT);
+        if($PAGE->context->contextlevel == CONTEXT_COURSECAT) {
+            $category = $PAGE->context->instanceid;
+        }
+        else if($COURSE->category > 0) {
+            $category = $COURSE->category;
+        }
+    }
+    else{
+        $catadmin_flag = false;
+    }
+
+    // normalise component name
+    if ($plugin === 'moodle' or $plugin === 'core') {
+        $plugin = NULL;
+    }
+
+    //todo eclass check for override/locked
+
+    //core config setting
     if (empty($plugin)) {
-        if (!array_key_exists($name, $CFG->config_php_settings)) {
-            // So it's defined for this invocation at least
-            if (is_null($value)) {
-                unset($CFG->$name);
-            } else {
-                $CFG->$name = (string)$value; // settings from db are always strings
+        //only touch CFG if not a category setting
+        if (!$catadmin_flag) {
+            if (!array_key_exists($name, $CFG->config_php_settings)) {
+                // So it's defined for this invocation at least
+                if (is_null($value)) {
+                    unset($CFG->$name);
+                } else {
+                    $CFG->$name = (string)$value; // settings from db are always strings
+                }
             }
         }
-
-        if ($DB->get_field('config', 'name', array('name'=>$name))) {
-            if ($value === null) {
-                $DB->delete_records('config', array('name'=>$name));
+        //global update Do the standard thing
+        if (!$catadmin_flag) {
+            if ($DB->get_field('config', 'name', array('name' => $name))) {
+                if ($value === null) {
+                    $DB->delete_records('config', array('name' => $name));
+                } else {
+                    $DB->set_field('config', 'value', $value, array('name' => $name));
+                }
             } else {
-                $DB->set_field('config', 'value', $value, array('name'=>$name));
+                if ($value !== null) {
+                    $config = new stdClass();
+                    $config->name = $name;
+                    $config->value = $value;
+                    $DB->insert_record('config', $config, false);
+                }
             }
-        } else {
-            if ($value !== null) {
-                $config = new stdClass();
-                $config->name  = $name;
-                $config->value = $value;
-                $DB->insert_record('config', $config, false);
+
+        } else { //category admin setting
+            //todo logging
+            if ($id = $DB->get_field('cat_config', 'id', array('name' => $name,'category_id'=>$category))) {
+                if ($value === null) {
+                    $DB->delete_records('cat_config', array('name' => $name,'category_id'=>$category));
+                } else {
+                    $DB->set_field('cat_config', 'value', $value, array('id' => $id)); //update the discovered record
+                }
+            } else {
+                if ($value !== null) {
+                    $config = new stdClass();
+                    $config->name = $name;
+                    $config->value = $value;
+                    $config->category_id = $category;
+                    $DB->insert_record('cat_config', $config, false);
+                }
             }
         }
-
     } else { // plugin scope
-        if ($id = $DB->get_field('config_plugins', 'id', array('name'=>$name, 'plugin'=>$plugin))) {
-            if ($value===null) {
-                $DB->delete_records('config_plugins', array('name'=>$name, 'plugin'=>$plugin));
+        //if its a global setting do the standard thing
+        if (!$catadmin_flag) {
+            if ($id = $DB->get_field('config_plugins', 'id', array('name' => $name, 'plugin' => $plugin))) {
+                if ($value === null) {
+                    $DB->delete_records('config_plugins', array('name' => $name, 'plugin' => $plugin));
+                } else {
+                    $DB->set_field('config_plugins', 'value', $value, array('id' => $id));
+                }
             } else {
-                $DB->set_field('config_plugins', 'value', $value, array('id'=>$id));
+                if ($value !== null) {
+                    $config = new stdClass();
+                    $config->plugin = $plugin;
+                    $config->name = $name;
+                    $config->value = $value;
+                    $DB->insert_record('config_plugins', $config, false);
+                }
             }
-        } else {
-            if ($value !== null) {
-                $config = new stdClass();
-                $config->plugin = $plugin;
-                $config->name   = $name;
-                $config->value  = $value;
-                $DB->insert_record('config_plugins', $config, false);
+        }
+        else { //category admin setting
+            //todo logging
+            if ($id = $DB->get_field('cat_config_plugins', 'id', array('name' => $name, 'plugin' => $plugin, 'category_id'=>$category))) {
+                if ($value === null) {
+                    $DB->delete_records('cat_config_plugins', array('id' => $id));
+                } else {
+                    $DB->set_field('cat_config_plugins', 'value', $value, array('id' => $id)); //update the discovered record
+                }
+            } else {
+                if ($value !== null) {
+                    $config = new stdClass();
+                    $config->plugin = $plugin;
+                    $config->name = $name;
+                    $config->value = $value;
+                    $config->category_id = $category;
+                    $DB->insert_record('cat_config_plugins', $config, false);
+                }
             }
         }
     }
+    /*********** End eClass Modification ********/
 
     return true;
 }
@@ -1343,7 +1416,29 @@ function set_config($name, $value, $plugin=NULL) {
  * @return mixed hash-like object or single value, return false no config found
  */
 function get_config($plugin, $name = NULL) {
-    global $CFG, $DB;
+    /*********** eClass Modification ************
+    Extra Comments: These modifications to the core code give an extra layer of administrative usability.
+    Category level settings for all settings are checked here.
+
+     ************/
+    global $CFG, $DB, $COURSE, $PAGE;
+
+
+    //only include the core change if the plugin is available.
+    if(file_exists($CFG->dirroot . '/local/contextadmin/locallib.php')){
+        require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
+        //category administration if its not the site level category
+        $catadmin_flag = ($COURSE->category > 0) || ($PAGE->context->contextlevel == CONTEXT_COURSECAT);
+        if($PAGE->context->contextlevel == CONTEXT_COURSECAT) {
+            $category = $PAGE->context->instanceid;
+        }
+        else if($COURSE->category > 0) {
+            $category = $COURSE->category;
+        }
+    }
+    else{
+        $catadmin_flag = false;
+    }
 
     // normalise component name
     if ($plugin === 'moodle' or $plugin === 'core') {
@@ -1356,21 +1451,36 @@ function get_config($plugin, $name = NULL) {
                 // setting forced in config file
                 return $CFG->forced_plugin_settings[$plugin][$name];
             } else {
-                return $DB->get_field('config_plugins', 'value', array('plugin'=>$plugin, 'name'=>$name));
+                if($catadmin_flag){
+                    return get_context_config_field($category,$name,$plugin);
+                }
+                else {
+                    return $DB->get_field('config_plugins', 'value', array('plugin'=>$plugin, 'name'=>$name));
+                }
             }
         } else {
             if (array_key_exists($name, $CFG->config_php_settings)) {
                 // setting force in config file
                 return $CFG->config_php_settings[$name];
             } else {
-                return $DB->get_field('config', 'value', array('name'=>$name));
+                if($catadmin_flag){
+                    return get_context_config_field($category,$name);
+                }
+                else {
+                    return $DB->get_field('config', 'value', array('name'=>$name));
+                }
             }
         }
     }
 
     // the user is after a recordset
     if ($plugin) {
-        $localcfg = $DB->get_records_menu('config_plugins', array('plugin'=>$plugin), '', 'name,value');
+        if($catadmin_flag){
+            $localcfg = get_context_config($category,$plugin);
+        }
+        else{
+            $localcfg = $DB->get_records_menu('config_plugins', array('plugin'=>$plugin), '', 'name,value');
+        }
         if (isset($CFG->forced_plugin_settings[$plugin])) {
             foreach($CFG->forced_plugin_settings[$plugin] as $n=>$v) {
                 if (is_null($v) or is_array($v) or is_object($v)) {
@@ -1390,7 +1500,13 @@ function get_config($plugin, $name = NULL) {
 
     } else {
         // this part is not really used any more, but anyway...
-        $localcfg = $DB->get_records_menu('config', array(), '', 'name,value');
+        if($catadmin_flag){
+            $localcfg = get_context_config($category);
+        }
+        else{
+            $localcfg = $DB->get_records_menu('config', array(), '', 'name,value');
+        }
+        /*********** End eClass Modification ********/
         foreach($CFG->config_php_settings as $n=>$v) {
             if (is_null($v) or is_array($v) or is_object($v)) {
                 // we do not want any extra mess here, just real settings that could be saved in db
@@ -1414,7 +1530,7 @@ function get_config($plugin, $name = NULL) {
  */
 function unset_config($name, $plugin=NULL) {
     global $CFG, $DB;
-
+    //todo eCLASS update of configs
     if (empty($plugin)) {
         unset($CFG->$name);
         $DB->delete_records('config', array('name'=>$name));
@@ -1433,6 +1549,7 @@ function unset_config($name, $plugin=NULL) {
  */
 function unset_all_config_for_plugin($plugin) {
     global $DB;
+    //todo update of config plugins
     $DB->delete_records('config_plugins', array('plugin' => $plugin));
     $like = $DB->sql_like('name', '?', true, true, false, '|');
     $params = array($DB->sql_like_escape($plugin.'_', '|') . '%');
@@ -6027,7 +6144,9 @@ function get_max_upload_sizes($sitebytes = 0, $coursebytes = 0, $modulebytes = 0
     $filesize[intval($maxsize)] = display_size($maxsize);
 
     $sizelist = array(10240, 51200, 102400, 512000, 1048576, 2097152,
-                      5242880, 10485760, 20971520, 52428800, 104857600);
+                      5242880, 10485760, 20971520, 52428800, 104857600,
+                      209715200, 314572800, 419430400, 524288000, 629145600,
+                      734003200, 838860800, 943718400);
 
     // If custombytes is given and is valid then add it to the list.
     if (is_number($custombytes) and $custombytes > 0) {

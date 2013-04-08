@@ -3168,6 +3168,7 @@ class settings_navigation extends navigation_node {
         }
 
         $settings = $this->load_user_settings($this->page->course->id);
+        $this->load_category_administration(); //eClass Modification
 
         if (isloggedin() && !isguestuser() && (!property_exists($SESSION, 'load_navigation_admin') || $SESSION->load_navigation_admin)) {
             $admin = $this->load_administration_settings();
@@ -4204,6 +4205,32 @@ class settings_navigation extends navigation_node {
     public function clear_cache() {
         $this->cache->volatile();
     }
+
+    /*********** eClass Modification ************
+     * Extra Comments: Most of the functionality of this method has been extracted into the local_contextadmin module in the localnav.php file.
+     * This should keep the core changes to a minimum.
+     ************/
+    /**
+     * Loads category specific administration in the navigation
+     *
+     * @return navigation_node
+     */
+    protected function load_category_administration()
+    {
+        global $CFG, $USER;
+        if (isloggedin() && !isguestuser()) {
+            // Check if the local module exists, if not then skip this.
+            if (file_exists($CFG->dirroot . '/local/contextadmin/localnav.php')) {
+                require_once($CFG->dirroot . '/local/contextadmin/localnav.php');
+                require_once($CFG->dirroot . '/local/contextadmin/locallib.php');
+                if (has_category_view_capability($USER->id)) {
+                    return get_context_nav(category_get_root($this), $this->context); // Create children nodes
+                }
+            }
+        }
+        return false;
+    }
+    /*********** End eClass Modification ********/
 }
 
 /**
