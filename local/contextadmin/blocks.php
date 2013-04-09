@@ -197,6 +197,7 @@ foreach ($blocks as $blockid => $current_block) {
                 if ($is_locked) {
                     $visible_td .= create_image_tag($OUTPUT->pix_url('i/show'), 'visible');
                     $visible_td .= $locked_image_tag;
+                    $class = ' class="dimmed_text"';
                 } else {
                     $visible_td .= create_form($OUTPUT, $current_block->name . "_visible_form", $self_path, $strhide, 'show',
                                                array('block_name' => $current_block->name, 'visible' => 'true',
@@ -216,7 +217,7 @@ foreach ($blocks as $blockid => $current_block) {
                     $override_td =
                         create_form($OUTPUT, $current_block->name . "_override_form", $self_path, $strhide, 'completion-manual-y',
                                     array('block_name' => $current_block->name, 'override' => 'false', 'sesskey' => sesskey()));
-                    $class       = '';
+
                 } else {
                     $override_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
                 }
@@ -235,7 +236,7 @@ foreach ($blocks as $blockid => $current_block) {
                     $locked_td =
                         create_form($OUTPUT, $current_block->name . "_locked_form", $self_path, $strhide, 'completion-manual-y',
                                     array('block_name' => $current_block->name, 'locked' => 'false', 'sesskey' => sesskey()));
-                    $class     = '';
+
                 } else {
                     $locked_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
                 }

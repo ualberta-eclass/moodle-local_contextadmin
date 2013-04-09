@@ -208,6 +208,7 @@ foreach ($modules as $current_module) {
                 if ($is_locked) {
                     $visible_td .= create_image_tag($OUTPUT->pix_url('i/show'), 'visible');
                     $visible_td .= $locked_image_tag;
+                    $class = ' class="dimmed_text"';
                 } else {
                     $visible_td .= create_form($OUTPUT, $current_module->name . "_visible_form", $self_path, $strhide, 'show',
                                                array('module_name' => $current_module->name, 'visible' => 'true',
@@ -227,7 +228,7 @@ foreach ($modules as $current_module) {
                     $override_td =
                         create_form($OUTPUT, $current_module->name . "_override_form", $self_path, $strhide, 'completion-manual-y',
                                     array('module_name' => $current_module->name, 'override' => 'false', 'sesskey' => sesskey()));
-                    $class       = '';
+
                 } else {
                     $override_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
                 }
@@ -246,7 +247,7 @@ foreach ($modules as $current_module) {
                     $locked_td =
                         create_form($OUTPUT, $current_module->name . "_locked_form", $self_path, $strhide, 'completion-manual-y',
                                     array('module_name' => $current_module->name, 'locked' => 'false', 'sesskey' => sesskey()));
-                    $class     = '';
+
                 } else {
                     $locked_td = create_image_tag($OUTPUT->pix_url('i/completion-manual-y'), 'locked in parent category');
                 }
