@@ -323,6 +323,7 @@ function print_whole_category_manager_list($category = null, $displaylist = null
         }
 
     } else {
+        $category = new stdClass();
         $category->id = "0";
     }
 
