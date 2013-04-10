@@ -43,6 +43,7 @@ This plugin adds the following 3 capabilities:
 ## Compatible With
 
 - 2.2.3+, may be compatible with previous but not tested.
+- 2.4.0+
 
 ## Repository
 
